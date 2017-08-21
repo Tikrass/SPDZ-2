@@ -28,7 +28,7 @@ endif
 # Default is 3, which suffices for 128-bit p
 # MOD = -DMAX_MOD_SZ=3
 
-LDLIBS = -lmpirxx -lmpir $(MY_LDLIBS) -lm -lpthread
+LDLIBS = -l:libmpirxx.so -l:libmpir.so $(MY_LDLIBS) -lm -lpthread
 
 ifeq ($(USE_NTL),1)
 LDLIBS := -lntl $(LDLIBS)
@@ -39,8 +39,8 @@ ifeq ($(OS), Linux)
 LDLIBS += -lrt
 endif
 
-CXX = g++
-CFLAGS = $(MY_CFLAGS) -g -Wextra -Wall $(OPTIM) -I$(ROOT) -pthread $(PROF) $(DEBUG) $(MOD) $(MEMPROTECT) $(GF2N_LONG) $(PREP_DIR) -maes -mpclmul -msse4.1 $(ARCH)
+CXX = g++-6.3
+CFLAGS = $(MY_CFLAGS) -g -Wextra -Wall $(OPTIM) -I$(ROOT) -pthread $(PROF) $(DEBUG) $(MOD) $(MEMPROTECT) $(GF2N_LONG) $(PREP_DIR) -maes -mpclmul -msse4.1 $(ARCH) 
 CPPFLAGS = $(CFLAGS)
 LD = g++
 

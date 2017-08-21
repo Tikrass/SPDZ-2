@@ -70,3 +70,10 @@ Programs/Public-Input/*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Eclipse Project Data #
+#######################
+.cproject
+.project
+.pydevproject
+.settings/
