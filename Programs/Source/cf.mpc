@@ -1,0 +1,75 @@
+from recommender import *
+
+# Python preprocessing for simulation of local computation.
+
+folder = "Prep-Data/ml-latest-small"
+
+
+D = dataset(folder)
+M = D.read()
+
+n = D.n
+m = 10000
+
+M2 = square_M(M,n,m)
+Mb = bool_M(M,n,m)
+
+
+
+undef = cint(0)
+
+# Convert to secure input
+
+sM = sfloatMatrix(n,m)
+for i in range(2):
+    for j in range(m):
+        sM[i][j] = sfloat(M[i,j])
+        
+sM2 = sfloatMatrix(n,m)
+for i in range(2):
+    for j in range(m):
+        sM[i][j] = sfloat(M2[i,j])
+        
+sMb = Matrix(n,m,sint)
+for i in range(2):
+    for j in range(m):
+        sM[i][j] = sint(Mb[i,j])
+        
+# Secure Collaborative Filtering
+ 
+def cosine_sim(a, a2, b, b2, intersec):
+    dot = sfloat(0)
+    norma = sfloat(0)
+    normb = sfloat(0)
+    l = len(intersec)
+    @for_range(l)
+    def _(i):
+        if_then(intersec[i])
+        dot = dot + a[i] * b[i]
+        norma = norma + a2
+        normb = normb + b2
+        end_if()
+
+    return dot / ((norma**0.5) * (normb**0.5))
+
+ 
+def compute_intersection(a, b):
+    n = len(a)
+    intersection = Array(n, cint)
+    @for_range(n)
+    def _(i):
+        intersection[i] = (a * b).reveal()
+    return intersection
+        
+        
+def sum(vec):
+    res = sfloat(0)
+    if isinstance(vec, sfloatArray):
+        for i in range(vec.length) :
+            res += vec[i]
+    res = res.reveal()
+    return res
+
+r = cosine_sim(sM[1], sM2[1], sM[2], sM2[2], compute_intersection(sMb[1], sMb[2]) )
+
+print_ln("%s", r)
