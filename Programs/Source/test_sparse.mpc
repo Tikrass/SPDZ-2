@@ -18,6 +18,7 @@ print(M.shape)
 
 undef = cint(0)
 
+<<<<<<< HEAD
 sM = SparseRowMatrix(n,m,100) 
 for i in range(n):
     sU = sM[i]
@@ -50,3 +51,13 @@ i = cint(0)
 j = cint(30)
 
 print_ln('Rating: %s', sM[i][j].reveal())
+=======
+U = SparseArray(100,m) 
+for j in range(m):
+    if M[0,j] != 0 :
+        U[j] = sint(M[0,j])
+
+i = cint(30)
+
+print_ln('Rating: %s', U[i].reveal())
+>>>>>>> a1071de10c8e04ecf4eb94e01efbe600430f38a2
