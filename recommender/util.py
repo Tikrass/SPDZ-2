@@ -1,5 +1,6 @@
 from scipy.sparse import lil_matrix
-from numpy import nonzero
+import subprocess
+#from numpy import nonzero
 
 def compute_intersection(a, b):
     """ Naive quadratic private set intersection.
@@ -29,10 +30,18 @@ def square_M(M, n,m):
             
 def bool_M(M, n,m):
     nonzeros = M.nonzero()
-    Mb = lil_matrix((n,m))
-    print(Mb.shape)
+    Mb = lil_matrix((n,m), dtype=int)
     for (i,j) in zip(nonzeros[0], nonzeros[1]):
         Mb[i,j] = 1
     return Mb
+
+def write_input_fp(player, value):
+    args = ("./gen_input_fp.x")
+    popen = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    popen.stdin.write("1\n")
+    popen.stdin.write("{}\n".format(value))
+    popen.wait()
+    with open("Player-Data/Private-Input-{}".format(player), "w") as file:
+        file.write(popen.stdout.read())
 
             
