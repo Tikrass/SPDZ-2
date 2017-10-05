@@ -1,0 +1,9 @@
+import recommender.util as util
+
+a = sint.get_raw_input_from(0)
+util.write_input_fp(0, 42)
+
+b = sint.get_raw_input_from(1)
+util.write_input_fp(1, 133)
+
+print_ln("%s", (a+b).reveal())

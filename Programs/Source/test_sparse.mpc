@@ -1,0 +1,28 @@
+from recommender import *
+from util import *
+# Python preprocessing for simulation of local computation.
+
+folder = "Prep-Data/ml-latest-small"
+
+
+D = dataset(folder, discretize=2)
+M = D.read()
+
+n = D.n
+m = D.m
+
+M2 = square_M(M,n,m)
+
+
+print(M.shape)
+
+undef = cint(0)
+
+U = SparseArray(100,m) 
+for j in range(m):
+    if M[0,j] != 0 :
+        U[j] = sint(M[0,j])
+
+i = cint(30)
+
+print_ln('Rating: %s', U[i].reveal())

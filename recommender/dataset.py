@@ -2,7 +2,7 @@ import csv
 from scipy.sparse import lil_matrix
 
 class dataset:
-    def __init__(self, folder, separator=',', quotechar='"', ratings_file_name="ratings.csv", movies_file_name="movies.csv" ):
+    def __init__(self, folder, separator=',', quotechar='"', ratings_file_name="ratings.csv", movies_file_name="movies.csv", discretize=None ):
         self.ratings_file_name=ratings_file_name
         self.movies_file_name=movies_file_name
         
@@ -14,6 +14,8 @@ class dataset:
         
         self.n = self.__count_userids()
         self.m = self.__count_movieids()
+        
+        self.discretize = discretize
             
     def __count_userids(self):
         with open(self.ratings_file_path, 'r') as ratings_file:
@@ -39,7 +41,11 @@ class dataset:
         return highest_id    
     
     def read(self):
-        M = lil_matrix((self.n, self.m))
+        if isinstance(self.discretize, int):
+            M = lil_matrix((self.n, self.m), dtype=int)
+        else :
+            M = lil_matrix((self.n, self.m))
+                                       
         with open(self.ratings_file_path, 'r') as ratings_file:
             reader = csv.reader(ratings_file, delimiter=self.delimiter, quotechar=self.quotechar)
             header = next(reader)    
@@ -47,6 +53,10 @@ class dataset:
                 uid = int(rating[0])-1
                 mid = int(rating[1])-1
                 r = float(rating[2])
+                if isinstance(self.discretize, int):
+                    r = r * (10**self.discretize)
+                    r = round(r)
+                
                 M[uid,mid] = r
         return M
     

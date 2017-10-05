@@ -5,30 +5,31 @@ from recommender import *
 folder = "Prep-Data/ml-latest-small"
 
 
-D = dataset(folder)
+D = dataset(folder, discretize=2)
 M = D.read()
 
 n = D.n
-m = 10000
+m = D.m
 
 M2 = square_M(M,n,m)
 Mb = bool_M(M,n,m)
 
 
+print(M.shape)
 
 undef = cint(0)
 
 # Convert to secure input
 
-sM = sfloatMatrix(n,m)
+sM = Matrix(n,m, sint)
 for i in range(2):
     for j in range(m):
-        sM[i][j] = sfloat(M[i,j])
+        sM[i][j] = sint(M[i,j])
         
-sM2 = sfloatMatrix(n,m)
+sM2 = Matrix(n,m, sint)
 for i in range(2):
     for j in range(m):
-        sM[i][j] = sfloat(M2[i,j])
+        sM[i][j] = sint(M2[i,j])
         
 sMb = Matrix(n,m,sint)
 for i in range(2):
@@ -38,19 +39,23 @@ for i in range(2):
 # Secure Collaborative Filtering
  
 def cosine_sim(a, a2, b, b2, intersec):
-    dot = sfloat(0)
-    norma = sfloat(0)
-    normb = sfloat(0)
+    dot = MemValue(sint(0))
+    norma = MemValue(sint(0))
+    normb = MemValue(sint(0))
     l = len(intersec)
     @for_range(l)
     def _(i):
         if_then(intersec[i])
-        dot = dot + a[i] * b[i]
-        norma = norma + a2
-        normb = normb + b2
+        dot.write(dot + a[i] * b[i])
+        norma.write(norma + a2[i])
+        normb.write(normb + b2[i])
         end_if()
-
-    return dot / ((norma**0.5) * (normb**0.5))
+    
+    dot_f = sfix(dot)
+    norma_f = sfloat(norma)
+    normb_f = sfloat(normb)
+    r = dot_f**2 / (norma_f * normb_f)
+    return r
 
  
 def compute_intersection(a, b):
@@ -58,7 +63,7 @@ def compute_intersection(a, b):
     intersection = Array(n, cint)
     @for_range(n)
     def _(i):
-        intersection[i] = (a * b).reveal()
+        intersection[i] = (a[i] * b[i]).reveal()
     return intersection
         
         
@@ -69,7 +74,9 @@ def sum(vec):
             res += vec[i]
     res = res.reveal()
     return res
+    
+intersec = compute_intersection(sMb[1], sMb[2])
+r = cosine_sim(sM[1], sM2[1], sM[2], sM2[2], intersec )
 
-r = cosine_sim(sM[1], sM2[1], sM[2], sM2[2], compute_intersection(sMb[1], sMb[2]) )
+print_ln("%s", r.reveal())
 
-print_ln("%s", r)
