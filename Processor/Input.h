@@ -1,4 +1,4 @@
-// (C) 2016 University of Bristol. See License.txt
+// (C) 2017 University of Bristol. See License.txt
 
 /*
  * Input.h
@@ -23,7 +23,7 @@ class Input
 {
     Processor& proc;
     MAC_Check<T>& MC;
-    vector< Share<T> > shares;
+    vector< vector< Share<T> > > shares;
     Buffer<T,T> buffer;
     Timer timer;
 

@@ -1,4 +1,4 @@
-# (C) 2016 University of Bristol. See License.txt
+# (C) 2017 University of Bristol. See License.txt
 
 from Compiler.types import cint,sint,cfix,sfix,sfloat,MPCThread,Array,MemValue,cgf2n,sgf2n,_number,_mem,_register,regint,Matrix,_types, cfloat
 from Compiler.instructions import *
@@ -72,9 +72,7 @@ def print_str(s, *args):
             else:
                 val = args[i]
             if isinstance(val, program.Tape.Register):
-                if val.reg_type == 'ci':
-                    cint(val).print_reg_plain()
-                elif val.is_clear:
+                if val.is_clear:
                     val.print_reg_plain()
                 else:
                     raise CompilerError('Cannot print secret value:', args[i])
@@ -83,12 +81,12 @@ def print_str(s, *args):
                 # number is encoded as [left].[right]
                 left = val.v
                 sign = -1 * (val.v < 0) + 1 * (val.v >= 0)
-                positive_left = sign * left
+                positive_left = cint(sign) * left
                 right = positive_left % 2**val.f
                 @if_(sign == -1)
                 def block():
                     print_str('-')
-                cint((positive_left - right + 1) / 2**val.f).print_reg_plain()
+                cint((positive_left - right + 1) >> val.f).print_reg_plain()
                 x = 0
                 max_dec_base = 6 # max 32-bit precision
                 last_nonzero = 0
@@ -355,7 +353,7 @@ class FunctionBlock(Function):
         parent_node = get_tape().req_node
         get_tape().open_scope(lambda x: x[0], None, 'begin-' + self.name)
         block = get_tape().active_basicblock
-        block.persistent_allocation = True
+        block.alloc_pool = defaultdict(set)
         del parent_node.children[-1]
         self.node = get_tape().req_node
         print 'Compiling function', self.name
