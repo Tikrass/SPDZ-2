@@ -17,41 +17,6 @@ M2 = square_M(M,n,m)
 print(M.shape)
 
 undef = cint(0)
-
-<<<<<<< HEAD
-sM = SparseRowMatrix(n,m,100) 
-for i in range(n):
-    sU = sM[i]
-    sU.writable()
-    for j in range(m):
-        if M[i,j] != 0 :
-            sU[sint(j)] = sint(M[i,j])
-
-def compute_intersection(a, b):
-    n = len(a)
-    intersection = Array(n, cint)
-    @for_range(n)
-    def _(i):
-        intersection[i] = (a[i] * b[i]).reveal()
-    return intersection
-        
-        
-def sum(vec):
-    res = sfloat(0)
-    if isinstance(vec, sfloatArray):
-        for i in range(vec.length) :
-            res += vec[i]
-    res = res.reveal()
-    return res
-    
-intersec = compute_intersection(sMb[1], sMb[2])
-r = cosine_sim(sM[1], sM2[1], sM[2], sM2[2], intersec )
-
-i = cint(0)
-j = cint(30)
-
-print_ln('Rating: %s', sM[i][j].reveal())
-=======
 U = SparseArray(100,m) 
 for j in range(m):
     if M[0,j] != 0 :
@@ -60,4 +25,3 @@ for j in range(m):
 i = cint(30)
 
 print_ln('Rating: %s', U[i].reveal())
->>>>>>> a1071de10c8e04ecf4eb94e01efbe600430f38a2
