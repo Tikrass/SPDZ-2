@@ -2423,14 +2423,14 @@ class sfloatMatrix(Matrix):
     
 class SparseArray(Array):
     def __init__(self, length, capacity, address=None):
-        self.matrix = Matrix(capacity+1, 2, sint, address)
+        self.matrix = Matrix(capacity, 2, sint, address)
         self.length = length
         self.value_type = sint
         self.address = address
         self.capacity = capacity
-        # Tailpointer is stored in entry (0,0)
-        self.tailpointer = self.matrix[0][0]
-        if self.address is not None :
+        self.tailpointer = cint(0)
+        self.readonly = False
+        if address != None:
             self.readonly = True
             self.tailpointer = capacity
 
@@ -2440,7 +2440,6 @@ class SparseArray(Array):
         res = MemValue(sint(0))
         @library.for_range(self.tailpointer)
         def f(i):
-            i += 1 # Data starts at index 1.
             k = self.matrix[i][0]
             match = k == key
             val = self.matrix[i][1]
@@ -2451,9 +2450,9 @@ class SparseArray(Array):
         if isinstance(key, slice):
             return Array.__setitem__(self, key, value)
         if self.readonly:
-            raise CompileError("Sparsematrix was load in read only mode.")
-        self.matrix[self.tailpointer+1][0] = key
-        self.matrix[self.tailpointer+1][1] = value
+            raise CompileError("Sparse Array is in readonly mode.")
+        self.matrix[self.tailpointer][0] = key
+        self.matrix[self.tailpointer][1] = value
         self.tailpointer += 1
     
     def __iter__(self):
@@ -2461,7 +2460,7 @@ class SparseArray(Array):
         @library.for_range(self.length)
         def f(i):
             r = sint(0)
-            key, value = self.matrix[key_i.read()+1]
+            key, value = self.matrix[key_i.read()]
             match = i == key
             if_then(match)
             r += value
@@ -2470,28 +2469,28 @@ class SparseArray(Array):
             yield r
     
     def writable(self):
-        """Setting the Array to writable, will override all entries from the beginning"""
         self.readonly = False
-        self.tailpointer = 0
+        self.tailpointer = cint(0)
     
     @classmethod
     def get_raw_input_from(cls, player, length, capacity, address=None):
-        res = cls(length, capacity, adress)
-        res.tailpointer += sint.get_raw_input_from(player)
-        @library.for_range(self.capacity)
+        res = cls(length, capacity, address)
+        @library.for_range(capacity)
         def get_entry(i):
             k = res.value_type.get_raw_input_from(player)
             v = res.value_type.get_raw_input_from(player)
-            res.matrix[i+1][0] = k
-            res.matrix[i+1][1] = v
+            res.matrix[i][0] = k
+            res.matrix[i][1] = v
+        res.tailpointer = sint.get_raw_input_from(player).reveal()
         return res
+        
     
 class SparseRowMatrix(Matrix):
     def __init__(self, rows, columns, rowcap):
         self.rows = rows
         self.columns = columns
         self.rowcap = rowcap
-        self.multi_array = MultiArray([rows, columns+1, 2], sint)
+        self.multi_array = MultiArray([rows, columns, 2], sint)
 
     def __getitem__(self, index):
         return SparseArray(self.columns,self.rowcap, self.multi_array[index].address)

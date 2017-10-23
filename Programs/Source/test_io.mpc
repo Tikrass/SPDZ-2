@@ -1,5 +1,5 @@
 import recommender.util as util
-
+clear_raw_input_fp()
 a = sint.get_raw_input_from(0)
 util.write_input_fp(0, 42)
 

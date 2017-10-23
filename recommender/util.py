@@ -34,14 +34,30 @@ def bool_M(M, n,m):
         Mb[i,j] = 1
     return Mb
 
+def clear_input_fp(player):
+    with open("Player-Data/Private-Input-{}".format(player), "w") as file:
+        pass
+    
 def write_input_fp(player, *values):
     args = ("./gen_input_fp.x", "-", "-")
     popen = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     popen.stdin.write("{}\n".format(len(values)))
     for value in values:
         popen.stdin.write("{}\n".format(value))
+        print(value)
     popen.wait()
-    with open("Player-Data/Private-Input-{}".format(player), "w") as file:
+    with open("Player-Data/Private-Input-{}".format(player), "a") as file:
         file.write(popen.stdout.read())
+        
+def write_input_array(player, length, capacity, values):
+    tailpointer = 0
+    for k in range(length):
+        if values[k] != 0:
+            write_input_fp(player, k, values[k])
+            tailpointer += 1;
+    for i in range(tailpointer, capacity):
+        write_input_fp(player, 0, 0)
+    write_input_fp(player, tailpointer)
+    
 
             
