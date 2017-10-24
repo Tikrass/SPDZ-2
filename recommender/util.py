@@ -1,5 +1,6 @@
 from scipy.sparse import lil_matrix
 import subprocess
+from distutils.errors import CompileError
 
 def compute_intersection(a, b):
     """ Naive quadratic private set intersection.
@@ -44,20 +45,23 @@ def write_input_fp(player, *values):
     popen.stdin.write("{}\n".format(len(values)))
     for value in values:
         popen.stdin.write("{}\n".format(value))
-        print(value)
     popen.wait()
     with open("Player-Data/Private-Input-{}".format(player), "a") as file:
         file.write(popen.stdout.read())
         
 def write_input_array(player, length, capacity, values):
+    input=[]
     tailpointer = 0
     for k in range(length):
         if values[k] != 0:
-            write_input_fp(player, k, values[k])
+            input += [k,values[k]]
             tailpointer += 1;
+    if tailpointer > capacity:
+        raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
     for i in range(tailpointer, capacity):
-        write_input_fp(player, 0, 0)
-    write_input_fp(player, tailpointer)
+        input += [0,0]
+    input += [tailpointer]
+    write_input_fp(player, input)
     
 
             

@@ -10,35 +10,30 @@ M = D.read()
 
 n = D.n
 m = D.m
+rowcap = 2400
 
 M2 = square_M(M,n,m)
 Mb = bool_M(M,n,m)
 
-U1 = SparseArray(100,m) 
-for j in range(m):
-    if M[0,j] != 0 :
-        U[j] = sint(M[0,j])
-
-print(M.shape)
-
-undef = cint(0)
-
 # Convert to secure input
+clear_input_fp(0)
 
-sM = Matrix(n,m, sint)
-for i in range(2):
-    for j in range(m):
-        sM[i][j] = sint(M[i,j])
-        
-sM2 = Matrix(n,m, sint)
-for i in range(2):
-    for j in range(m):
-        sM[i][j] = sint(M2[i,j])
-        
-sMb = Matrix(n,m,sint)
-for i in range(2):
-    for j in range(m):
-        sM[i][j] = sint(Mb[i,j])
+n = 100
+
+sM = SparseRowMatrix(n,m, rowcap)
+values = M.toarray()
+for i in range(n):
+    write_input_array(0, m, rowcap, values[i])
+    U = SparseArray.get_raw_input_from(0, m, rowcap, address=sM[i].address)
+    sM[i].tailpointer = U.tailpointer
+
+sM2 = SparseRowMatrix(n,m, rowcap)
+values = M2.toarray()
+for i in range(n):
+    write_input_array(0, m, rowcap, values[i])
+    U = SparseArray.get_raw_input_from(0, m, rowcap, address=sM2[i].address)
+    sM2[i].tailpointer = U.tailpointer
+
         
 # Secure Collaborative Filtering
  
@@ -79,8 +74,8 @@ def sum(vec):
     res = res.reveal()
     return res
     
-intersec = compute_intersection(sMb[1], sMb[2])
-r = cosine_sim(sM[1], sM2[1], sM[2], sM2[2], intersec )
+#intersec = compute_intersection(sMb[1], sMb[2])
+#r = cosine_sim(sM[1], sM2[1], sM[2], sM2[2], intersec )
 
-print_ln("%s", r.reveal())
+#print_ln("%s", r.reveal())
 

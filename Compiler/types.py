@@ -2495,9 +2495,6 @@ class SparseRowMatrix(Matrix):
     def __getitem__(self, index):
         return SparseArray(self.columns,self.rowcap, self.multi_array[index].address)
     
-    def __setitem__(self, index, row):
-        self.multi_array[index].assign(iter(sfloat(value)))
-    
 class _mem(_number):
     __add__ = lambda self,other: self.read() + other
     __sub__ = lambda self,other: self.read() - other

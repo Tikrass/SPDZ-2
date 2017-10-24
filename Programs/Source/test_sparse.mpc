@@ -15,7 +15,7 @@ M2 = square_M(M,n,m)
 
 
 print(M.shape)
-values = M.getrowview(0).toarray()[0]
+values = M.toarray()[0]
 clear_input_fp(0)
 write_input_array(0, m, 100, values)
 U = SparseArray.get_raw_input_from(0,m, 100)
