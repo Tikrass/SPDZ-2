@@ -2481,6 +2481,7 @@ class SparseArray(Array):
             v = res.value_type.get_raw_input_from(player)
             res.matrix[i][0] = k
             res.matrix[i][1] = v
+        res.writable()
         res.tailpointer = sint.get_raw_input_from(player).reveal()
         return res
         
@@ -2490,7 +2491,8 @@ class SparseRowMatrix(Matrix):
         self.rows = rows
         self.columns = columns
         self.rowcap = rowcap
-        self.multi_array = MultiArray([rows, columns, 2], sint)
+        self.multi_array = MultiArray([rows, rowcap, 2], sint)
+        
 
     def __getitem__(self, index):
         return SparseArray(self.columns,self.rowcap, self.multi_array[index].address)

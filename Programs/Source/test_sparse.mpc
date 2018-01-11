@@ -5,21 +5,42 @@ from util import *
 folder = "Prep-Data/ml-latest-small"
 
 
-D = dataset(folder, discretize=2)
-M = D.read()
+n =  m = 5
+rowcap = 3
+M = [[0,22,68,0,0],
+     [98,13,0,0,50],
+     [60,0,34,0,10],
+     [03,97,20,0,0],
+     [0,0,0,79,45]]
 
-n = D.n
-m = D.m
 
-M2 = square_M(M,n,m)
+i = 0
+sU = SparseArray(m,rowcap)
+for j in range(m):
+        if M[i][j] != 0:
+            sU[j]=M[i][j]
 
+sM = SparseRowMatrix(n,m,rowcap)
+for i in range(n):
+    sU = sM[i]
+    sU.writable()
+    for j in range(m):
+        if M[i][j] != 0:
+            sU[j]=M[i][j]
 
-print(M.shape)
-values = M.toarray()[0]
+     
+for i in range(m):
+    for j in range(m):
+        print_str('%s ', sM[cint(i)][cint(j)].reveal())
+    print_ln(" ")
+            
+
+values = M[0]
 clear_input_fp(0)
-write_input_array(0, m, 100, values)
-U = SparseArray.get_raw_input_from(0,m, 100)
+write_input_array(0, m, rowcap, values)
+U = SparseArray.get_raw_input_from(0,m, rowcap)
 
 
-for i in range(50):
-    print_ln('Rating: %s %s', i, U[cint(i)].reveal())
+for i in range(m):
+    print_str(' %s ', U[cint(i)].reveal())
+print_ln(" ")

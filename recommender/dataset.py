@@ -40,7 +40,7 @@ class dataset:
                     highest_id = int(row[0])
         return highest_id    
     
-    def read(self):
+    def read(self, n=None, m=None):
         if isinstance(self.discretize, int):
             M = lil_matrix((self.n, self.m), dtype=int)
         else :
@@ -56,7 +56,6 @@ class dataset:
                 if isinstance(self.discretize, int):
                     r = r * (10**self.discretize)
                     r = round(r)
-                
                 M[uid,mid] = r
         return M
     

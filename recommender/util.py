@@ -1,6 +1,7 @@
 from scipy.sparse import lil_matrix
 import subprocess
 from distutils.errors import CompileError
+from array import array
 
 def compute_intersection(a, b):
     """ Naive quadratic private set intersection.
@@ -23,10 +24,8 @@ def compute_intersection(a, b):
             intersection[i] = if_else(match, a[i], intersection[i]) # match * a[i] + (1 - match) * intersection[i]
     return intersection, is_match_at
 
-def square_M(M, n,m):
-    M2 = M.copy()
-    M2.power(2)
-    return M2
+def square_M(M):
+    return M.power(2)
             
 def bool_M(M, n,m):
     nonzeros = M.nonzero()
@@ -45,9 +44,11 @@ def write_input_fp(player, *values):
     popen.stdin.write("{}\n".format(len(values)))
     for value in values:
         popen.stdin.write("{}\n".format(value))
-    popen.wait()
+    
     with open("Player-Data/Private-Input-{}".format(player), "a") as file:
         file.write(popen.stdout.read())
+    popen.wait()
+    #print("Integers written to input %s: %s" % ( player, len(values)) )
         
 def write_input_array(player, length, capacity, values):
     input=[]
@@ -58,10 +59,11 @@ def write_input_array(player, length, capacity, values):
             tailpointer += 1;
     if tailpointer > capacity:
         raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
-    for i in range(tailpointer, capacity):
+    for _ in range(tailpointer, capacity):
         input += [0,0]
     input += [tailpointer]
-    write_input_fp(player, input)
+    write_input_fp(player, *input)
+    
     
 
             

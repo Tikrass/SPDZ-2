@@ -1,5 +1,6 @@
 import recommender.util as util
-clear_raw_input_fp()
+util.clear_input_fp(0)
+util.clear_input_fp(2)
 a = sint.get_raw_input_from(0)
 util.write_input_fp(0, 42)
 
@@ -7,3 +8,36 @@ b = sint.get_raw_input_from(1)
 util.write_input_fp(1, 133)
 
 print_ln("%s", (a+b).reveal())
+
+
+val = [30, 0, 0, 30, 1060]
+util.write_input_array(0, 5, 3, val)
+val = SparseArray.get_raw_input_from(0, 5, 3)
+for i in range(5):
+   print_str('%s ', val[i].reveal())
+print_ln(' ')
+
+
+rowcap = 3
+n = 5
+m = 5
+
+M = [[0,22,68,0,0],
+     [98,13,0,0,50],
+     [60,0,34,0,10],
+     [03,97,20,0,0],
+    [0,0,0,79,45]]
+sM = SparseRowMatrix(n,m, rowcap)
+for i in range(n):
+    util.write_input_array(0, m, rowcap, M[i])
+@for_range(n)
+def loop_matrix(i):
+    sMi = SparseArray.get_raw_input_from(0, m, rowcap, address=sM[i].address)
+    sM[i].tailpointer = sMi.tailpointer
+    
+for i in range(n):
+    for j in range(m):
+        print_str('%s ', sM[i][j].reveal())
+    print_ln(' ')
+
+
