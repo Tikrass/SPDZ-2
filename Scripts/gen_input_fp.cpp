@@ -3,38 +3,52 @@
 #include <iostream>
 #include <fstream>
 #include "Math/gfp.h"
+#include "Processor/Buffer.h"
+#include "Tools/ezOptionParser.h"
+#include "Math/Setup.h"
 
 using namespace std;
 
-int main(int argc, char **argv) {
-	istream* in;
-	ostream* out;
-	bool use_stdin = false;
-	bool use_stdout = false;
-	if(argc == 0) {
-		in = new ifstream("gfp_vals.in");
-		out = new ofstream("gfp_vals.out");
-	} else if(argc == 3) {
-		// Input Stream
-		if (strcmp(argv[1], "-")==0){
-			use_stdin = true;
-			in = &cin;
-		} else {
-			in = new ifstream(argv[1]);
-		}
-		// Output Stream
-		if (strcmp(argv[2], "-")==0){
-			use_stdout = true;
-			out = &cout;
-		} else {
-			out = new ofstream(argv[2]);
-		}
-	} else {
-		cerr << "Usage: gen_input_fp.x [<INFILE> <OUTFILE>]\n\tUse \"-\" for standard input and standard output.\n\tIf no files are specified \"gfp_vals.in\" and \"gfp_vals.out\" are used by default.";
-		return 1;
-	}
+int main(int argc, const char** argv) {
+    ez::ezOptionParser opt;
+    opt.add(
+          "128", // Default.
+          0, // Required?
+          1, // Number of args expected.
+          0, // Delimiter if expecting multiple args.
+          "Bit length of GF(p) field (default: 128)", // Help description.
+          "-lgp", // Flag token.
+          "--lgp" // Flag token.
+    );
+    opt.add(
+          "40", // Default.
+          0, // Required?
+          1, // Number of args expected.
+          0, // Delimiter if expecting multiple args.
+          "Bit length of GF(2^n) field (default: 40)", // Help description.
+          "-lg2", // Flag token.
+          "--lg2" // Flag token.
+    );
+    opt.add(
+        "2", // Default.
+        0, // Required?
+        1, // Number of args expected.
+        0, // Delimiter if expecting multiple args.
+        "Number of parties (default: 2).", // Help description.
+        "-N", // Flag token.
+        "--nparties" // Flag token.
+    );
+    opt.parse(argc, argv);
+    int nparties, lgp, lg2;
+    opt.get("-N")->getInt(nparties);
+    opt.get("-lgp")->getInt(lgp);
+    opt.get("-lg2")->getInt(lg2);
+    read_setup(nparties, lgp, lg2);
 
-	gfp::init_field(bigint("172035116406933162231178957667602464769"));
+	const char* input_name = "gfp_vals.in";
+	const char* output_name = "gfp_vals.out";
+	ifstream cin(input_name);
+	ofstream cout(output_name);
 
 	int n; *in >> n;
 	for (int i = 0; i < n; ++i) {
@@ -54,6 +68,19 @@ int main(int argc, char **argv) {
 		((ofstream*)out)->close();
 		delete out;
 	}
+	if (cin.fail())
+	{
+		cout.close();
+		unlink(output_name);
+		throw runtime_error("Failed to read " + string(input_name));
+	}
+
+	n = -(n % BUFFER_SIZE) + BUFFER_SIZE;
+	cerr << "Adding " << n << " zeros to match buffer size" << endl;
+	for (int i = 0; i < n; i++)
+		gfp(0).output(cout, false);
+	cerr << "Output written to " << output_name
+			<< ", copy to Player-Data/Private-Input-<playerno>" << endl;
 
 	return 0;
 }

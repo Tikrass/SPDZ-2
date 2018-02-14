@@ -457,6 +457,9 @@ class cint(_clear, _int):
     def __neg__(self):
         return 0 - self
 
+    def __abs__(self):
+        return (self >= 0).if_else(self, -self)
+
     @vectorize
     def __invert__(self):
         res = cint()
@@ -1041,6 +1044,10 @@ class sint(_secret, _int):
     @vectorize
     def __neg__(self):
         return 0 - self
+
+    @vectorize
+    def __abs__(self):
+        return (self >= 0).if_else(self, -self)
 
     @read_mem_value
     @vectorize
@@ -1957,6 +1964,7 @@ class sfloat(_number):
         s: sign bit
         """
     __slots__ = ['v', 'p', 'z', 's', 'size']
+
     # single precision
     vlen = 24
     plen = 8
