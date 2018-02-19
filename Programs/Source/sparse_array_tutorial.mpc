@@ -1,0 +1,65 @@
+from recommender import *
+from util import *
+# Python preprocessing for simulation of local computation.
+
+folder = "Prep-Data/ml-latest-small"
+
+n = 5
+m = 10
+cap = 5
+
+# Non mutable sparse integer array
+A = SparseArray(m,cap, sint)
+
+for i in range(0,m,2):
+    print(i)
+    A[sint(i)] = sint(i*100)
+    
+print_ln('Sparse Array of shared integers')
+for i in range(m):
+    print_ln('%s', A[i].reveal())
+    
+# Non mutable sparse sfix array
+A = sfixSparseArray(m,cap)
+
+for i in range(0,m,2):
+    print(i)
+    A[sint(i)] = sfix(i*100)
+    
+print_ln('Sparse Array of shared fixed points')
+for i in range(m):
+    print_ln('%s', A[i].reveal())
+    
+# Non mutable sparse row matrix
+B = SparseRowMatrix(n, m, cap, sint)
+for i in range(n):
+    Bi = B[i]
+    Bi.writable()
+    for j in range(m):
+        if((j+i) % 2 == 0 ):
+            print(j)
+            Bi[sint(j)] = sint(i*j)
+            
+print_ln('sparse row matrix of shared integers')
+for i in range(n):
+    for j in range(m):
+        print_str('%s ', B[i][j].reveal())
+    print_ln(' ')
+
+
+# Non mutable sparse row matrix
+B = sfixSparseRowMatrix(n, m, cap)
+for i in range(n):
+    Bi = B[i]
+    Bi.writable()
+    for j in range(m):
+        if((j+i) % 2 == 0 ):
+            print(j)
+            Bi[sint(j)] = sfix(i*j)
+            
+print_ln('sparse row matrix of shared fixed points')
+for i in range(n):
+    for j in range(m):
+        print_str('%s ', B[i][j].reveal())
+    print_ln(' ')
+
