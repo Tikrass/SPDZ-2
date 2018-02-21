@@ -1,0 +1,78 @@
+from collaborative_filter import SparseIBCosineCollaborativeFilter
+from recommender import *
+import sys
+
+# Program parameters
+sys.setrecursionlimit(10000)
+
+program.bit_length = 80
+program.security = 40
+
+
+# DATA
+n = 5
+m = 18
+rowcap = 12
+M = [[0 ,2.2, 6.8, 0 , 0 , 0 , 0 , 0 , 3.0, 20, 0 , 1.0, 2.2, 0 , 0 , 0 , 0.8 ,6.0],
+     [9.8,1.3, 0 , 0 , 5.0, 0 , 0 , 1.0, 0 , 2.5, 3.0, 0 , 9.0, 0 , 0 , 3.0, 0 , 0],
+     [6.0,0 , 3.4, 0 , 1.0, 2.0, 1.0, 0 , 8.0, 0 , 0 , 5.0, 0 , 2.9, 1.5, 9.0, 0 ,2.0],
+     [0.3,9.7,2.0 ,0  , 0 , 0 , 0 , 0 , 0 , 2.2, 8.0, 1.0, 2.5, 6.0, 0 , 4.0, 0 ,9.0],
+     [0 ,0 , 0 , 7.9, 4.5, 9.0, 2.0, 2.0, 8.0, 3.0, 5.0, 0 , 0 , 5.0, 6.0, 0 , 3.0, 0]]
+
+
+
+def test(auto_norms):
+    
+    #########################
+    # Preparing Private Input
+    #########################
+    IO = InputFp(0)
+    for i in range(n):
+        IO.append_fp_sparse_array(m, rowcap, [int(j* (2**sfix.f)) for j in M[i]])
+        
+        
+
+    if not auto_norms:
+        # Squared sums of user-vectors
+        for i in range(n):
+            s = 0
+            for j in range(m):
+                s += M[i][j]**2
+            IO.append_fp(int(s * (2**sfix.f)))
+            
+    # Write private input to file
+    IO.gen_input_fp()
+    
+    
+    #########################
+    # Reading Private Input
+    #########################
+    
+    CF = SparseIBCosineCollaborativeFilter(n,m,rowcap)
+    
+    @for_range(n)
+    def user_loop1(i):
+        CF.load_raitings_from(i, 0)
+        
+    if auto_norms:
+        CF.calc_normalization_factors()
+    else :
+        @for_range(n)
+        def user_loop2(i):
+            CF.load_normalization_from(i, 0)
+        
+    #########################
+    # Building Model
+    #########################
+    CF.build_model()
+    
+    #########################
+    # Output Model
+    #########################
+    for i in range(n):
+        for j in range(n):
+            print_str('%s ', CF.model[i][j].reveal())
+        print_ln(' ')
+
+test(False)
+        

@@ -2436,81 +2436,7 @@ class sfloatMatrix(Matrix):
     def __getitem__(self, index):
         return sfloatArray(self.columns, self.multi_array[index].address)
     
-class SparseArray(Array):
-    def __init__(self, length, capacity, value_type, address=None):
-        self.length = length
-        self.capacity = capacity
-        self.value_type = value_type
-        self.array = Array(capacity*2, value_type, address)
-        self.address = self.array.address
-        self.tailpointer = cint(0)
-        self.readonly = False
-        if address != None:
-            self.readonly = True
-            self.tailpointer = capacity
-    
-    def __getkey(self, index):
-        return self.array[2*index]
-    
-    def __setkey(self, index, key):
-        self.array[2*index] = key
-    
-    def __getval(self, index):
-        return self.array[2*index+1]
-    
-    def __setval(self, index, val):
-        self.array[2*index+1] = val
-                          
-    def __getitem__(self, key):
-        if isinstance(key, slice):
-            return Array.__getitem__(self, key)
-        
-        res = MemValue(sint(0))
-        @library.for_range(self.tailpointer)
-        def f(i):
-            k = self.__getkey(i)
-            match = k == key
-            val = self.__getval(i)
-            res.write(util.if_else(match, val, res.read()))
-        val = res.read()
-        res.delete()
-        return val  
-    
-    def __setitem__(self, key, value):   
-        if isinstance(key, slice):
-            return Array.__setitem__(self, key, value)
-        if self.readonly:
-            raise CompileError("Sparse Array is in readonly mode.")
-        self.__setkey(self.tailpointer, key)
-        self.__setval(self.tailpointer, value)
-        self.tailpointer += 1
-    
-    def writable(self, tailpointer=0):
-        self.readonly = False
-        self.tailpointer = tailpointer
-    
-    @classmethod
-    def get_raw_input_from(cls, player, length, capacity, value_type, address=None):
-        res = cls(length, capacity, value_type, address)
-        @library.for_range(capacity)
-        def get_entry(i):
-            k = res.value_type.get_raw_input_from(player)
-            v = res.value_type.get_raw_input_from(player)
-            res.__setkey(i, k)
-            res.__setval(i, v)
-        return res
-        
-    
-class SparseRowMatrix(Matrix):
-    def __init__(self, rows, columns, rowcap, value_type, addess=None):
-        self.rows = rows
-        self.columns = columns
-        self.rowcap = rowcap
-        self.matrix = Matrix(rows, columns*2, value_type)
-        
 
-    def __getitem__(self, index):
-        return SparseArray(self.columns,self.rowcap, self.matrix.value_type, self.matrix[index].address)
     
 class sfixArray(Array):
     def __init__(self, length, address=None):
@@ -2542,41 +2468,6 @@ class sfixMatrix(Matrix):
 
     def get_address(self):
         return self.multi_array.get_address()
-    
-class sfixSparseArray(Array):
-    def __init__(self, length, capacity, address=None):
-        self.length = length
-        self.capacity = capacity
-        self.array = SparseArray(length, capacity, sint, address)
-        self.value_type = sfix
-        self.address = self.array.address
-
-    def __getitem__(self, index):
-        if isinstance(index, slice):
-            return Array.__getitem__(self, index)
-        return sfix(*self.array[index])
-
-    def __setitem__(self, index, value):
-        if isinstance(index, slice):
-            return Array.__setitem__(self, index, value)
-        self.array[index] = value.v
-    
-    writable =  lambda self, *tailpointer : self.array.writable(*tailpointer)
-    #def writable(self,tailpointer=0):
-    #    self.array.writable(tailpointer)
-
-class sfixSparseRowMatrix(Matrix):
-    def __init__(self, rows, columns, rowcap, addess=None):
-        self.rows = rows
-        self.columns = columns
-        self.rowcap = rowcap
-        self.value_type = sfix
-        self.matrix = Matrix(rows, columns*2, sint)
-        self.address = self.matrix.address
-        
-
-    def __getitem__(self, index):
-        return sfixSparseArray(self.columns,self.rowcap, self.matrix[index].address)
 
 class _mem(_number):
     __add__ = lambda self,other: self.read() + other
