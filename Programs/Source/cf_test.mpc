@@ -1,4 +1,4 @@
-from collaborative_filter import SparseIBCosineCollaborativeFilter
+from collaborative_filter import SparseUBCosineCF, UBCosineCF
 from recommender import *
 import sys
 
@@ -19,16 +19,17 @@ M = [[0 ,2.2, 6.8, 0 , 0 , 0 , 0 , 0 , 3.0, 20, 0 , 1.0, 2.2, 0 , 0 , 0 , 0.8 ,6
      [0.3,9.7,2.0 ,0  , 0 , 0 , 0 , 0 , 0 , 2.2, 8.0, 1.0, 2.5, 6.0, 0 , 4.0, 0 ,9.0],
      [0 ,0 , 0 , 7.9, 4.5, 9.0, 2.0, 2.0, 8.0, 3.0, 5.0, 0 , 0 , 5.0, 6.0, 0 , 3.0, 0]]
 
+# IO Interface
+IO = InputFp(0)
 
 
-def test(auto_norms):
+def test(auto_norms, CF, cap):
     
     #########################
     # Preparing Private Input
     #########################
-    IO = InputFp(0)
     for i in range(n):
-        IO.append_fp_sparse_array(m, rowcap, [int(j* (2**sfix.f)) for j in M[i]])
+        IO.append_fp_array([int(j* (2**sfix.f)) for j in M[i]],capacity=cap)
         
         
 
@@ -40,15 +41,14 @@ def test(auto_norms):
                 s += M[i][j]**2
             IO.append_fp(int(s * (2**sfix.f)))
             
-    # Write private input to file
-    IO.gen_input_fp()
+
     
     
     #########################
     # Reading Private Input
     #########################
     
-    CF = SparseIBCosineCollaborativeFilter(n,m,rowcap)
+    
     
     @for_range(n)
     def user_loop1(i):
@@ -74,5 +74,9 @@ def test(auto_norms):
             print_str('%s ', CF.model[i][j].reveal())
         print_ln(' ')
 
-test(False)
+test(False, UBCosineCF(n,m), None)
+test(False, SparseUBCosineCF(n,m, rowcap), rowcap)
+
+# Write private input to file
+IO.gen_input_fp()
         

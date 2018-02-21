@@ -14,7 +14,6 @@ class InputFp:
         proc = subprocess.Popen(args, stdin=subprocess.PIPE)
         proc.stdin.write("{}\n".format(len(self.input_fp)))
         for value in self.input_fp:
-            print(value)
             proc.stdin.write("{}\n".format(value))
         proc.wait()
         #print("Integers written to input %s: %s" % ( player, len(values)) )
@@ -22,10 +21,16 @@ class InputFp:
     def append_fp(self, *values): 
         self.input_fp += values
         
-    def append_fp_sparse_array(self, length, capacity, values):
+    def append_fp_array(self, values, capacity=None):
+        if capacity == None:
+            self.append_fp(*values)
+        else:
+            self.append_fp_sparse_array(values, capacity)
+            
+    def append_fp_sparse_array(self, values, capacity):
         input=[]
         tailpointer = 0
-        for k in range(length):
+        for k in range(len(values)):
             if values[k] != 0:
                 input += [k,values[k]]
                 tailpointer += 1;
