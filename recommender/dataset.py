@@ -12,8 +12,8 @@ class dataset:
         self.ratings_file_path=folder+"/"+ratings_file_name
         self.movies_file_path=folder+"/"+movies_file_name
         
-        self.n = self.__count_userids()
-        self.m = self.__count_movieids()
+        self.n_max = self.__count_userids()
+        self.m_max = self.__count_movieids()
         
         self.discretize = discretize
             
@@ -41,6 +41,16 @@ class dataset:
         return highest_id    
     
     def read(self, n=None, m=None):
+        if n != None and n <= self.n_max:
+            self.n = n
+        else:
+            self.n = self.n_max
+        
+        if m != None and m <= self.m_max:
+            self.m = m
+        else:
+            self.m = self.m_max
+        
         if isinstance(self.discretize, int):
             M = lil_matrix((self.n, self.m), dtype=int)
         else :
@@ -56,7 +66,9 @@ class dataset:
                 if isinstance(self.discretize, int):
                     r = r * (10**self.discretize)
                     r = round(r)
-                M[uid,mid] = r
+                    
+                if uid < self.n and mid < self.m:
+                    M[uid,mid] = r
         return M
     
 

@@ -3,79 +3,155 @@ from recommender import *
 import sys
 
 # Program parameters
-sys.setrecursionlimit(10000)
+sys.setrecursionlimit(100000)
 
 program.bit_length = 80
 program.security = 40
 
-
-# DATA
-n = 5
-m = 18
-rowcap = 12
-M = [[0 ,2.2, 6.8, 0 , 0 , 0 , 0 , 0 , 3.0, 20, 0 , 1.0, 2.2, 0 , 0 , 0 , 0.8 ,6.0],
-     [9.8,1.3, 0 , 0 , 5.0, 0 , 0 , 1.0, 0 , 2.5, 3.0, 0 , 9.0, 0 , 0 , 3.0, 0 , 0],
-     [6.0,0 , 3.4, 0 , 1.0, 2.0, 1.0, 0 , 8.0, 0 , 0 , 5.0, 0 , 2.9, 1.5, 9.0, 0 ,2.0],
-     [0.3,9.7,2.0 ,0  , 0 , 0 , 0 , 0 , 0 , 2.2, 8.0, 1.0, 2.5, 6.0, 0 , 4.0, 0 ,9.0],
-     [0 ,0 , 0 , 7.9, 4.5, 9.0, 2.0, 2.0, 8.0, 3.0, 5.0, 0 , 0 , 5.0, 6.0, 0 , 3.0, 0]]
-
 # IO Interface
 IO = InputFp(0)
 
+class Test:
+    def __init__(self):
+        self.n = 0
+        self.m = 0
+        self.rowcap = None
 
-def test(auto_norms, CF, cap):
+    # DATA
+    def test_data(self):
+        self.n = 5
+        self.m = 18
+        self.rowcap = 11
+        self.M =[[0.0,2.2,6.8,0.0,0.0,0.0,0.0,0.0,3.0,2.0,0.0,1.0,2.2,0.0,0.0,0.0,0.8,6.0],
+                 [9.8,1.3,0.0,0.0,5.0,0.0,0.0,1.0,0.0,2.5,3.0,0.0,9.0,0.0,0.0,3.0,0.0,0.0],
+                 [6.0,0.0,3.4,0.0,1.0,2.0,1.0,0.0,8.0,0.0,0.0,5.0,0.0,2.9,1.5,9.0,0.0,2.0],
+                 [0.3,9.7,2.0,0.0,0.0,0.0,0.0,0.0,0.0,2.2,8.0,1.0,2.5,6.0,0.0,4.0,0.0,9.0],
+                 [0.0,0.0,0.0,7.9,4.5,9.0,2.0,2.0,8.0,3.0,5.0,0.0,0.0,5.0,6.0,0.0,3.0,0.0]]
+        
+        return self
+
+    def eval_data(self, n=None, m=None): 
+        folder = "Prep-Data/ml-latest-small"
+        
+        D = dataset(folder)
+        self.M = D.read(n,m).toarray()
+        
+        self.n = D.n
+        self.m = D.m
+        self.rowcap = 2400
+        
+        return self
+
+
     
-    #########################
-    # Preparing Private Input
-    #########################
-    for i in range(n):
-        IO.append_fp_array([int(j* (2**sfix.f)) for j in M[i]],capacity=cap)
+    
+    def test(self, auto_norms, sparse):
         
+        n = self.n
+        m = self.m
+        M = self.M
         
-
-    if not auto_norms:
-        # Squared sums of user-vectors
-        for i in range(n):
-            s = 0
-            for j in range(m):
-                s += M[i][j]**2
-            IO.append_fp(int(s * (2**sfix.f)))
+        if sparse:
+            cap = self.rowcap
+            CF = SparseUBCosineCF(n,m, self.rowcap)
+        else:
+            cap = None
+            CF = UBCosineCF(n,m)
             
-
+        print_ln("############################\nNEW TEST RUN")
+        print_ln("n = %s\nm = %s", n, m)
+        if sparse:
+            print_ln("sparse:\nrowcap = %s", self.rowcap)
+        print_ln("")
+            
+        #########################
+        # Preparing Private Input
+        #########################
+        print("Preparing rating input.")
+        for i in range(n):
+            sys.stdout.write(str(i)+'\r')
+            IO.append_fp_array([int(j* (2**sfix.f)) for j in M[i]],capacity=cap)
+            
+            
+        print("Preparing norm input.")
+        if not auto_norms:
+            # Squared sums of user-vectors
+            for i in range(n):
+                s = 0
+                for j in range(m):
+                    s += M[i][j]**2
+                IO.append_fp(int(s * (2**sfix.f)))
+                
     
-    
-    #########################
-    # Reading Private Input
-    #########################
-    
-    
-    
-    @for_range(n)
-    def user_loop1(i):
-        CF.load_raitings_from(i, 0)
         
-    if auto_norms:
-        CF.calc_normalization_factors()
-    else :
+        
+        #########################
+        # Reading Private Input
+        #########################
+        
+        
+        start_timer(1)
+        print_ln("Loading private input.")
         @for_range(n)
-        def user_loop2(i):
-            CF.load_normalization_from(i, 0)
+        def user_loop1(i):
+            CF.load_raitings_from(i, 0)
+            
+        if auto_norms:
+            CF.calc_normalization_factors()
+        else :
+            @for_range(n)
+            def user_loop2(i):
+                CF.load_normalization_from(i, 0)
+        stop_timer(1)
         
-    #########################
-    # Building Model
-    #########################
-    CF.build_model()
-    
-    #########################
-    # Output Model
-    #########################
-    for i in range(n):
-        for j in range(n):
-            print_str('%s ', CF.model[i][j].reveal())
-        print_ln(' ')
-
-test(False, UBCosineCF(n,m), None)
-test(False, SparseUBCosineCF(n,m, rowcap), rowcap)
+        #########################
+        # Building Model
+        #########################
+        start_timer(2)
+        print_ln("Computing shared similarity model.")
+        CF.build_model()
+        stop_timer(2)
+        
+        #########################
+        # Output Model
+        #########################
+        print_ln("Model:")
+        @for_range(n)
+        def user_loop(i):
+            @for_range(n)
+            def user_loop(j):
+                print_str('%s ', CF.model[i][j].reveal())
+            print_ln(' ')
+            
+        #########################
+        # Prediction
+        #########################
+        start_timer(3)
+        print_ln("Prediction ALL:")
+        @for_range(n)
+        def user_loop(i):
+            @for_range(m)
+            def item_loop(j):
+                print_str('%s ', CF.predict_rating(i,j).reveal())
+            print_ln(' ')
+        stop_timer(3)
+        start_timer(4)
+        print_ln("Prediction TRE:")
+        @for_range(n)
+        def user_loop(i):
+            @for_range(m)
+            def item_loop(j):
+                print_str('%s ', CF.predict_rating_thresholded(i,j,cfix(0.05)).reveal())
+            print_ln(' ')
+        stop_timer(4)
+        #########################
+        # Clean up memory
+        #########################
+        CF.delete()
+   
+T = Test().test_data() 
+T.test(False, False)
+T.test(False, True)
 
 # Write private input to file
 IO.gen_input_fp()

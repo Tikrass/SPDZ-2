@@ -15,10 +15,10 @@ class SparseArray(Array):
             self.tailpointer = capacity
     
     def _getkey(self, index):
-        return self.array[2*index]
+        return self.array[2*index]-1
     
     def _setkey(self, index, key):
-        self.array[2*index] = key
+        self.array[2*index] = key+1
     
     def _getval(self, index):
         return self.array[2*index+1]
@@ -37,10 +37,11 @@ class SparseArray(Array):
             k = self._getkey(i)
             match = k == key
             val = self._getval(i)
-            res.write(util.if_else(match, val, res.read()))
-        val = res.read()
-        res.delete()
-        return val  
+            res.write(match.if_else(val, res.read()))
+            #print_ln("match %s, res %s", match.reveal(), res.reveal())
+        #val = res.read()
+        #res.delete()
+        return res.read()  
     
     def __setitem__(self, key, value):   
         if isinstance(key, slice):

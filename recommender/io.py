@@ -37,7 +37,7 @@ class InputFp:
         if tailpointer > capacity:
             raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
         for _ in range(tailpointer, capacity):
-            input += [0,0]
+            input += [-1,0]
         input += [tailpointer]
         self.input_fp +=  input
     

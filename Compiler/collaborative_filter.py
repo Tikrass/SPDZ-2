@@ -1,16 +1,161 @@
 from Compiler.types import *
 from Compiler.library import *
 from Compiler.sparse_types import *
+
 # 0 no verbosity (secure)
-# 1 compare final results
-# 2 print dot-product and ratings
-# 3 verbose dot-product calculation
-DEBUG = 0
-    
-class CosineSimilarity(object):
-    def __init__(self, nusers):
-        self.norms = sfixArray(nusers)  # Normalization factors for the similarity measure.
+# 1 verbose progress (secure)
+# 2 print intermediate results 
+# 3 print more intermediate results
+DEBUG = 1
+
+class AbstractCollaborativeFilter(object):
+    def __init__(self, nusers, nitems, ratings):
+        self.nusers = nusers # Number of users
+        self.nitems = nitems # Number of items
+        self.ratings = ratings # Rating matrix
         
+    def load_raitings_from(self, user, player):
+        ratings = self.ratings[user]
+        self._load_ratings_from(player, ratings)
+            
+    def delete(self):
+        self.ratings.delete()
+        
+class UserBasedModel(object):
+    def __init__(self, nusers, nitems):
+        self.model = sfixMatrix(nusers,nusers) # Similarity model
+    
+    def build_model(self):
+        if DEBUG >= 1:
+            print_ln("Building secure shared similarity model")
+        @for_range(self.nusers)
+        def users_loop1(i):
+            @for_range(i,self.nusers)
+            def users_loop2(j):
+                if DEBUG >= 1:
+                    print_str("\r%s to %s     ", i,j)
+                ratings_j = self.ratings[j]
+                sim = self._build_model(i, j)
+                self.model[i][j] = sim
+                self.model[j][i] = sim
+        
+        if DEBUG >= 1:
+            print_str("\r")
+    
+    @method_block
+    def predict_rating_all(self, user, item):
+        if DEBUG >= 1.5:
+            print_ln("Predicting rating for user %s and item %s.", user, item)
+        
+        rating_sum = sfix.MemValue(0)
+        normalization = sfix.MemValue(0)
+        
+        @for_range(self.nusers)
+        def user_loop(i):
+            similarity = self.model[user][i]
+            rating_other = self.ratings[i][item]
+            if_then(i != user)
+            rating_sum.write(rating_sum + rating_other * similarity)
+            normalization.write(normalization + similarity)
+            #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
+            end_if()
+        prediction = rating_sum.read() / normalization.read()
+        
+        #rating_sum.delete()
+        #normalization.delete()
+        
+        return prediction     
+    
+    @method_block
+    def predict_rating_thresholded(self, user, item, t):
+        if DEBUG >= 1.5:
+            print_ln("Predicting rating for user %s and item %s.", user, item)
+        
+        rating_sum = sfix.MemValue(0)
+        normalization = sfix.MemValue(0)
+        
+        @for_range(self.nusers)
+        def user_loop(i):
+            similarity = self.model[user][i]
+            rating_other = self.ratings[i][item]
+            if_then(i != user)
+            condition = similarity >= t
+            rating_sum.write(condition.if_else(
+                    rating_sum + rating_other * similarity,
+                    rating_sum.read()
+                            ))
+            normalization.write(condition.if_else(
+                    normalization + similarity,
+                    normalization.read()
+                            ))
+            #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
+            end_if()
+        prediction = rating_sum.read() / normalization.read()
+        
+        #rating_sum.delete()
+        #normalization.delete()
+        
+        return prediction     
+    
+    @method_block
+    def predict_rating_knn(self, user, item, k):
+        pass
+    
+    predict_rating = predict_rating_all
+        
+    
+    def delete(self):
+        self.model.delete()
+        
+class ItemBasedModel(object):
+    def __init__(self, nusers, nitems):
+        self.model = cfixMatrix(nitems,nitems) # Similarity model
+        
+    def build_model(self):
+        if DEBUG >= 1:
+            print_ln("Building secure shared similarity model")
+        @for_range(self.nitems)
+        def item_loop1(i):
+            @for_range(i,self.nitems)
+            def item_loop2(j):
+                if DEBUG >= 1:
+                    print_str("\r%s to %s     ", i,j)
+                ratings_j = self.ratings[j]
+                sim = self._build_model(i, j)
+                self.model[i][j] = sim
+                self.model[j][i] = sim
+        
+        if DEBUG >= 1:
+            print_str("\r")
+    
+    def predict_rating_all(self, user, item):
+        pass
+
+    def predict_rating_thresholded(self, user, item, t):
+        pass
+    
+    def predict_rating_knn(self, user, item, k):
+        pass
+    
+    predict_rating = predict_rating_all
+        
+    
+    def delete(self):
+        self.model.delete()
+
+class UBCosineCF(UserBasedModel, AbstractCollaborativeFilter):
+    
+    def __init__(self, nusers, nitems):
+        self.norms = sfixArray(nusers)  # Normalization factors for the similarity measure.
+        UserBasedModel.__init__(self, nusers, nitems)
+        AbstractCollaborativeFilter.__init__(self, nusers, nitems,sfixMatrix(nusers,nitems))
+            
+    def _load_ratings_from(self, player, ratings):
+        @for_range(self.nitems)
+        def items_loop(i):
+            r = sint.get_raw_input_from(player)
+            ratings[i] = sfix(*r)
+            
     def load_normalization_from(self, user, player):
         norm = sint.get_raw_input_from(player)
         self.norms[user] = sfix(*norm)
@@ -32,14 +177,14 @@ class CosineSimilarity(object):
     
     @classmethod
     def _dot_product(cls,a,b):
-        if a.length != b.length :
-            raise CompileError("Size does not match.")
         dot = sfix.MemValue(0)
-        
         @for_range(a.length)
         def product_loop(i):
             dot.write(dot.read() + a[i] * b[i])
-        return dot.read()
+        
+        res = dot.read()
+        #dot.delete()
+        return res
     
     @classmethod
     def _cosine_sim(cls, a, norma, b, normb):
@@ -52,62 +197,43 @@ class CosineSimilarity(object):
             print_ln(" ")
         return cos2
     
-    _build_model = lambda self, i, j :  self._cosine_sim(self.ratings[i], self.norms[i], self.ratings[j], self.norms[j])
+    @method_block
+    def cosine_sim(self,a_ptr, norma, b_ptr, normb):
+        a = sfixArray(self.nitems,a_ptr)
+        b = sfixArray(self.nitems,b_ptr)
+        return self._cosine_sim(a,norma,b,normb)
     
-class UserBasedModel(object):
-    def __init__(self, nusers, nitems):
-        self.model = sfixMatrix(nusers,nusers) # Similarity model
-        
-    def build_model(self):
-        library.print_ln("Computing shared similarity model.")
-        @for_range(self.nusers)
-        def users_loop1(i):
-            @for_range(self.nusers)
-            def users_loop2(j):
-                ratings_j = self.ratings[j]
-                self.model[i][j] = self._build_model(i, j)
-    
-    def predict_rating(self, user, item):
-        raise CompilerError('Not implemented yet!')
+    _build_model = lambda self, i, j :  self.cosine_sim(self.ratings[i].address, self.norms[i], self.ratings[j].address, self.norms[j])
+            
+    def delete(self):
+        self.norms.delete()
+        AbstractCollaborativeFilter.delete(self)
+        UserBasedModel.delete(self)
 
-class UBCosineCF(CosineSimilarity, UserBasedModel):
-    def __init__(self, nusers, nitems):
-        self.nusers = nusers # Number of users
-        self.nitems = nitems # Number of items
-        self.ratings = sfixMatrix(nusers, nitems) # Rating matrix
-        CosineSimilarity.__init__(self, nusers)
-        UserBasedModel.__init__(self, nusers, nitems)
-        
-        
-    def load_raitings_from(self, user, player):
-        ratings = self.ratings[user]
-        @for_range(self.nitems)
-        def items_loop(i):
-            r = sint.get_raw_input_from(player)
-            ratings[i] = sfix(*r)
-
-class SparseUBCosineCF(CosineSimilarity, UserBasedModel):
-    
+class SparseUBCosineCF(UBCosineCF, AbstractCollaborativeFilter):
     def __init__(self, nusers, nitems, capacity):
-        self.nusers = nusers # Number of users
-        self.nitems = nitems # Number of items
-        self.capacity = capacity
-        self.ratings = sfixSparseRowMatrix(nusers, nitems, capacity) # Rating matrix in sparse representation
-        CosineSimilarity.__init__(self, nusers)
+        self.norms = sfixArray(nusers)  # Normalization factors for the similarity measure.
         UserBasedModel.__init__(self, nusers, nitems)
+        self.capacity = capacity
+        AbstractCollaborativeFilter.__init__(self, nusers, nitems, sfixSparseRowMatrix(nusers, nitems, capacity))
         
-    def load_raitings_from(self, user, player):
-        ratings, tp = sfixSparseArray.get_raw_input_from(0, self.nitems, self.capacity, address=self.ratings[user].address)
+    def _load_ratings_from(self, player, ratings):
+        sfixSparseArray.get_raw_input_from(player, self.nitems, self.capacity, address=ratings.address)
         
+    @method_block
+    def cosine_sim(self,a_ptr, norma, b_ptr, normb):
+        a = sfixSparseArray(self.nitems,self.capacity,a_ptr)
+        b = sfixSparseArray(self.nitems,self.capacity,b_ptr)
+        return self._cosine_sim(a,norma,b,normb)
+    
     @classmethod
-    def _dot_product(cls, a, b):
-        if a.capacity != b.capacity or a.length != b.length :
-            raise CompileError("Size or Capacity does not match.")
+    def _dot_product(self, a, b):
         dot = sfix.MemValue(0)
         pa = MemValue(cint(0))
         pb = MemValue(cint(0))
         if DEBUG >= 3: 
             print_ln("selfcap: %s, othercap: %s", a.capacity, b.capacity)
+        @do_while
         def product_loop():
             ka = a._getkey(pa.read())
             kb = b._getkey(pb.read())
@@ -128,9 +254,6 @@ class SparseUBCosineCF(CosineSimilarity, UserBasedModel):
             pb.write(pb+1)
             end_if()
            
-            
-            #condition = ka < kb
-            #pa.write(if_else(condition, val, res.read()))
             cond = (ka<kb).reveal()
             if_then(cond)
             if DEBUG >= 3: 
@@ -152,7 +275,11 @@ class SparseUBCosineCF(CosineSimilarity, UserBasedModel):
                 print_ln("Loop-Condition: %s < %s and %s < %s -> %s", pa.read(), a.capacity, pb.read(), b.capacity,  cond)
                 print_ln(" ")
             return cond
-        do_while(product_loop)
+        
+        #res = dot.read()
+        #dot.delete()
+        #pa.delete()
+        #pb.delete()
         return dot.read()
         
 
