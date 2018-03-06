@@ -14,6 +14,9 @@ class SparseArray(Array):
             self.readonly = True
             self.tailpointer = capacity
     
+    def delete(self):
+        self.array.delete()
+    
     def _getkey(self, index):
         return self.array[2*index]-1
     
@@ -77,7 +80,9 @@ class SparseRowMatrix(Matrix):
         self.columns = columns
         self.rowcap = rowcap
         self.matrix = Matrix(rows, columns*2, value_type)
-        
+    
+    def delete(self):
+        self.matrix.delete() 
 
     def __getitem__(self, index):
         return SparseArray(self.columns,self.rowcap, self.matrix.value_type, self.matrix[index].address)
@@ -89,6 +94,10 @@ class sfixSparseArray(Array):
         self.array = SparseArray(length, capacity, sint, address)
         self.value_type = sfix
         self.address = self.array.address
+        
+        
+    def delete(self):
+        self.array.delete()
     
     _getkey = lambda self, index: self.array._getkey(index)
     _setkey = lambda self, index, key: self.array._setkey(index,key)
@@ -122,7 +131,11 @@ class sfixSparseRowMatrix(Matrix):
         self.value_type = sfix
         self.matrix = Matrix(rows, columns*2, sint)
         self.address = self.matrix.address
-        
+    
+    def delete(self):
+        self.matrix.delete()
 
     def __getitem__(self, index):
         return sfixSparseArray(self.columns,self.rowcap, self.matrix[index].address)
+    
+

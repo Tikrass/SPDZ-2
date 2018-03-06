@@ -2,12 +2,6 @@ from Compiler.types import *
 from Compiler.library import *
 from Compiler.sparse_types import *
 
-# 0 no verbosity (secure)
-# 1 verbose progress (secure)
-# 2 print intermediate results 
-# 3 print more intermediate results
-DEBUG = 1
-
 class AbstractCollaborativeFilter(object):
     def __init__(self, nusers, nitems, ratings):
         self.nusers = nusers # Number of users
@@ -26,26 +20,26 @@ class UserBasedModel(object):
         self.model = sfixMatrix(nusers,nusers) # Similarity model
     
     def build_model(self):
-        if DEBUG >= 1:
+        if DEBUG >= VERBOSE:
             print_ln("Building secure shared similarity model")
         @for_range(self.nusers)
         def users_loop1(i):
             @for_range(i,self.nusers)
             def users_loop2(j):
-                if DEBUG >= 1:
+                if DEBUG >= VERBOSE_PROGRESS:
                     print_str("\r%s to %s     ", i,j)
                 ratings_j = self.ratings[j]
                 sim = self._build_model(i, j)
                 self.model[i][j] = sim
                 self.model[j][i] = sim
         
-        if DEBUG >= 1:
+        if DEBUG >= VERBOSE_PROGRESS:
             print_str("\r")
     
     @method_block
     def predict_rating_all(self, user, item):
-        if DEBUG >= 1.5:
-            print_ln("Predicting rating for user %s and item %s.", user, item)
+        if DEBUG >= INTERMEDIATE:
+            print_ln("Predicting rating:\n user %s, item %s", user, item)
         
         rating_sum = sfix.MemValue(0)
         normalization = sfix.MemValue(0)
@@ -68,8 +62,8 @@ class UserBasedModel(object):
     
     @method_block
     def predict_rating_thresholded(self, user, item, t):
-        if DEBUG >= 1.5:
-            print_ln("Predicting rating for user %s and item %s.", user, item)
+        if DEBUG >= INTERMEDIATE:
+            print_ln("Predicting rating:\n user %s, item %s, threshold %s", user, item, t)
         
         rating_sum = sfix.MemValue(0)
         normalization = sfix.MemValue(0)
@@ -112,20 +106,20 @@ class ItemBasedModel(object):
         self.model = cfixMatrix(nitems,nitems) # Similarity model
         
     def build_model(self):
-        if DEBUG >= 1:
+        if DEBUG >= VERBOSE:
             print_ln("Building secure shared similarity model")
         @for_range(self.nitems)
         def item_loop1(i):
             @for_range(i,self.nitems)
             def item_loop2(j):
-                if DEBUG >= 1:
+                if DEBUG >= VERBOSE_PROGRESS:
                     print_str("\r%s to %s     ", i,j)
                 ratings_j = self.ratings[j]
                 sim = self._build_model(i, j)
                 self.model[i][j] = sim
                 self.model[j][i] = sim
         
-        if DEBUG >= 1:
+        if DEBUG >= VERBOSE_PROGRESS:
             print_str("\r")
     
     def predict_rating_all(self, user, item):
@@ -189,10 +183,10 @@ class UBCosineCF(UserBasedModel, AbstractCollaborativeFilter):
     @classmethod
     def _cosine_sim(cls, a, norma, b, normb):
         dot = cls._dot_product(a,b)
-        if DEBUG >= 2:
+        if DEBUG >= INTERMEDIATE:
             print_ln("dot: %s", dot.reveal())
         cos2 = (dot/norma)*(dot/normb) #square of cosine similarity: Take square root after revelation.
-        if DEBUG >= 2:
+        if DEBUG >= INTERMEDIATE:
             print_ln("cos2: %s", cos2.reveal())
             print_ln(" ")
         return cos2
@@ -203,7 +197,7 @@ class UBCosineCF(UserBasedModel, AbstractCollaborativeFilter):
         b = sfixArray(self.nitems,b_ptr)
         return self._cosine_sim(a,norma,b,normb)
     
-    _build_model = lambda self, i, j :  self.cosine_sim(self.ratings[i].address, self.norms[i], self.ratings[j].address, self.norms[j])
+    _build_model = lambda self, i, j :  self.cosine_sim(self.ratings[i].array.address, self.norms[i], self.ratings[i].array.address, self.norms[j])
             
     def delete(self):
         self.norms.delete()
@@ -231,17 +225,17 @@ class SparseUBCosineCF(UBCosineCF, AbstractCollaborativeFilter):
         dot = sfix.MemValue(0)
         pa = MemValue(cint(0))
         pb = MemValue(cint(0))
-        if DEBUG >= 3: 
+        if DEBUG >= INTERMEDIATE_FULL:
             print_ln("selfcap: %s, othercap: %s", a.capacity, b.capacity)
         @do_while
         def product_loop():
             ka = a._getkey(pa.read())
             kb = b._getkey(pb.read())
-            if DEBUG >= 3: 
+            if DEBUG >= INTERMEDIATE_FULL:
                 print_ln("pself: %s, pother: %s", pa.read(), pb.read())
             cond = (ka == kb).reveal()
             if_then(cond)
-            if DEBUG >= 3: 
+            if DEBUG >= INTERMEDIATE_FULL:
                 print_ln("case 1: kself %s == kother %s", ka.reveal(), kb.reveal())
                 print_ln("%s + %s * %s = %s",
                          dot.reveal(),
@@ -256,21 +250,21 @@ class SparseUBCosineCF(UBCosineCF, AbstractCollaborativeFilter):
            
             cond = (ka<kb).reveal()
             if_then(cond)
-            if DEBUG >= 3: 
+            if DEBUG >= INTERMEDIATE_FULL:
                 print_ln("case 2: ka %s < kb %s", ka.reveal(), kb.reveal())
             pa.write(pa+1)
             end_if()
             
             cond = (ka > kb).reveal()
             if_then(cond)
-            if DEBUG >= 3: 
+            if DEBUG >= INTERMEDIATE_FULL:
                 print_ln("case 3: ka %s > kb %s", ka.reveal(), kb.reveal())
             pb.write(pb+1)
             end_if()
             
             #abort = (ka == sint(0) and kb == sint(0)).reveal()
             cond = (pa.read() < a.capacity) * (pb.read() < b.capacity)
-            if DEBUG >= 3: 
+            if DEBUG >= INTERMEDIATE_FULL:
                 print_ln("dot: %s", dot.reveal())
                 print_ln("Loop-Condition: %s < %s and %s < %s -> %s", pa.read(), a.capacity, pb.read(), b.capacity,  cond)
                 print_ln(" ")

@@ -2,7 +2,7 @@ import csv
 from scipy.sparse import lil_matrix
 
 class dataset:
-    def __init__(self, folder, separator=',', quotechar='"', ratings_file_name="ratings.csv", movies_file_name="movies.csv", discretize=None ):
+    def __init__(self, folder, separator=',', quotechar='"', ratings_file_name="ratings.csv", movies_file_name="movies.csv"):
         self.ratings_file_name=ratings_file_name
         self.movies_file_name=movies_file_name
         
@@ -13,9 +13,9 @@ class dataset:
         self.movies_file_path=folder+"/"+movies_file_name
         
         self.n_max = self.__count_userids()
-        self.m_max = self.__count_movieids()
+        self.mid_dict,self.mid_invdict = self.__canonicalize_movieids()
+        self.m_max = len(self.mid_dict)
         
-        self.discretize = discretize
             
     def __count_userids(self):
         with open(self.ratings_file_path, 'r') as ratings_file:
@@ -29,16 +29,20 @@ class dataset:
         return highest_id            
             
     
-    def __count_movieids(self):
+    def __canonicalize_movieids(self):
+        counter = 0
+        dict = []
+        inv_dict = {}
         with open(self.movies_file_path, 'r') as movies_file:
-            highest_id=0;
             reader = csv.reader(movies_file, delimiter=self.delimiter, quotechar=self.quotechar)
             header = next(reader)
             assert(header[0] == 'movieId')
             for row in reader:
-                if int(row[0]) > highest_id :
-                    highest_id = int(row[0])
-        return highest_id    
+                movieid = int(row[0])
+                dict.append(movieid)
+                inv_dict[movieid] = counter
+                counter+=1
+        return dict, inv_dict   
     
     def read(self, n=None, m=None):
         if n != None and n <= self.n_max:
@@ -51,24 +55,19 @@ class dataset:
         else:
             self.m = self.m_max
         
-        if isinstance(self.discretize, int):
-            M = lil_matrix((self.n, self.m), dtype=int)
-        else :
-            M = lil_matrix((self.n, self.m))
+        M = lil_matrix((self.n, self.m))
                                        
         with open(self.ratings_file_path, 'r') as ratings_file:
             reader = csv.reader(ratings_file, delimiter=self.delimiter, quotechar=self.quotechar)
             header = next(reader)    
             for rating in reader:
                 uid = int(rating[0])-1
-                mid = int(rating[1])-1
+                mid = int(rating[1])
+                iid = self.mid_invdict[mid]
                 r = float(rating[2])
-                if isinstance(self.discretize, int):
-                    r = r * (10**self.discretize)
-                    r = round(r)
                     
                 if uid < self.n and mid < self.m:
-                    M[uid,mid] = r
+                    M[uid,iid] = r
         return M
     
 

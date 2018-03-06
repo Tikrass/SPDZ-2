@@ -1,12 +1,16 @@
 from collaborative_filter import SparseUBCosineCF, UBCosineCF
 from recommender import *
 import sys
+from config_mine import *
 
 # Program parameters
 sys.setrecursionlimit(100000)
 
 program.bit_length = 80
 program.security = 40
+
+# Verbosity
+DEBUG = VERBOSE_PROGRESS
 
 # IO Interface
 IO = InputFp(0)
@@ -91,7 +95,8 @@ class Test:
         
         
         start_timer(1)
-        print_ln("Loading private input.")
+        if DEBUG >= VERBOSE:
+            print_ln("Loading private input.")
         @for_range(n)
         def user_loop1(i):
             CF.load_raitings_from(i, 0)
@@ -108,48 +113,65 @@ class Test:
         # Building Model
         #########################
         start_timer(2)
-        print_ln("Computing shared similarity model.")
         CF.build_model()
         stop_timer(2)
         
         #########################
         # Output Model
         #########################
-        print_ln("Model:")
-        @for_range(n)
-        def user_loop(i):
+        if DEBUG >= VERBOSE_VALUES:
+            print_ln("Model:")
             @for_range(n)
-            def user_loop(j):
-                print_str('%s ', CF.model[i][j].reveal())
-            print_ln(' ')
+            def user_loop(i):
+                @for_range(n)
+                def user_loop(j):
+                    print_str('%s ', CF.model[i][j].reveal())
+                print_ln(' ')
             
         #########################
         # Prediction
         #########################
         start_timer(3)
-        print_ln("Prediction ALL:")
+        if DEBUG >= VERBOSE_VALUES:
+            print_ln("Prediction ALL:")
         @for_range(n)
         def user_loop(i):
             @for_range(m)
             def item_loop(j):
-                print_str('%s ', CF.predict_rating(i,j).reveal())
-            print_ln(' ')
+                if DEBUG == VERBOSE_PROGRESS:
+                    print_str("\ruser %s item %s       ", i, j)
+                prediction = CF.predict_rating(i,j).reveal()
+                if DEBUG>=VERBOSE_VALUES:
+                    print_str('%s ', prediction)
+                    
+            if DEBUG>=VERBOSE_VALUES:
+                print_ln(' ')
+        if DEBUG == VERBOSE_PROGRESS:
+            print_str("\r")
         stop_timer(3)
         start_timer(4)
-        print_ln("Prediction TRE:")
+        if DEBUG >= VERBOSE_VALUES:
+            print_ln("Prediction TRE:")
         @for_range(n)
         def user_loop(i):
             @for_range(m)
             def item_loop(j):
-                print_str('%s ', CF.predict_rating_thresholded(i,j,cfix(0.05)).reveal())
-            print_ln(' ')
+                if DEBUG == VERBOSE_PROGRESS:
+                    print_str("\ruser %s item %s       ", i, j)
+                prediction = CF.predict_rating_thresholded(i,j,cfix(0.05)).reveal()
+                if DEBUG>=VERBOSE_VALUES:
+                    print_str('%s ', prediction)
+            if DEBUG>=VERBOSE_VALUES:
+                print_ln(' ')
+        if DEBUG == VERBOSE_PROGRESS:
+            print_str("\r")
         stop_timer(4)
         #########################
         # Clean up memory
         #########################
         CF.delete()
    
-T = Test().test_data() 
+T = Test().eval_data() 
 T.test(False, False)
 T.test(False, True)
 
