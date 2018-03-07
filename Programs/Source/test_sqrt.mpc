@@ -1,0 +1,36 @@
+from Compiler.floatingpoint import two_power, shift_two
+
+def test(actual, expected):
+    if isinstance(actual, (sint, sgf2n)):
+        actual = actual.reveal()
+    print_ln('expected %s, got %s', expected, actual)
+
+
+
+b = cfix(2)
+c = cfix(1)
+
+def cfix_approximate_log2(a, k, f):
+    count = MemValue(cint(0))
+    @for_range(k)
+    def _(i):
+        if_then(shift_two(a,i) > 0)
+        count.write(count + 1)
+        end_if()
+    return count-f-1
+print_ln("log(%s) = %s",b,  cfix_approximate_log2(b.v, cfix.k, cfix.f))
+print_ln("log(%s) = %s",c,  cfix_approximate_log2(c.v, cfix.k, cfix.f))
+
+def cfix_approximate_invsqrt(a, k, f):
+    return 2**(cfix_approximate_log2(a, k, f)/2)
+
+print_ln("sqrt(%s) = %s",b,  cfix_approximate_invsqrt(b.v, cfix.k, cfix.f))
+
+def cfix_invsqrt(a, k,f):
+    theta = int(ceil(log(k/3.5) / log(2)))
+    
+    sign_a = cint(1) - 2 * cint(a < 0)
+    absolute_a = a * sign_a
+    
+    
+
