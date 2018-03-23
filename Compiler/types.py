@@ -1769,6 +1769,10 @@ class cfix(_number):
             return sfix(library.FPDiv(self.v, other.v, self.k, self.f, other.kappa))
         else:
             raise TypeError('Incompatible fixed point types in division')
+     
+    @vectorize   
+    def sqrt(self):
+        return library.cfix_sqrt(self.v, self.k, self.f)
 
 class sfix(_number):
     """ Shared fixed point type. """

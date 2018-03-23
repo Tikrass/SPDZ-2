@@ -1332,3 +1332,63 @@ def Norm(b, k, f, kappa, simplex_flag=False):
     signed_acc = sign * acc
 
     return part_reciprocal, signed_acc
+
+def cfix_invsqrt(a, k, f): 
+    """ 
+        Compute reciprocal square root of cfix(a) based on taylor series 
+        estimation and Goldschmidt’s algorithm.
+    """
+    rounds = f/2 # Maybe find better parameter
+    three = cfix(3).v
+    B = Array(rounds, cint)
+    Y = Array(rounds, cint)
+    y = Array(rounds, cint)
+    # Taylor series estimation
+    # 1 - 1/2(x-1) + 3/8(x-1)^2
+    t0 = cfix(1/sqrt(2)).v
+    t1 = cfix(1/4*sqrt(2)).v
+    t2 = cfix(3/32*sqrt(2)).v
+    a_shift = a - cfix(2).v
+    B[0] = a
+    Y[0] = t0 - shift_two(t1 * a_shift,f)  + shift_two(t2 * shift_two(a_shift * a_shift,f),f)
+    y[0] = Y[0]
+    for i in range(1, rounds):
+        B[i] = shift_two(B[i-1] * shift_two(Y[i-1] * Y[i-1],f),f)
+        Y[i] = shift_two(three - B[i], 1)
+        y[i] = shift_two(y[i-1] * Y[i],f)
+        print_ln("B[i]: %s, Y[i]: %s", B[i], Y[i])
+        
+    return y[rounds - 1]
+
+def cfix_sqrt(x):
+    
+    # sqrt(x) = 2^-n * sqrt( 4^n *x )
+    a = x.v
+    k = x.k
+    f = x.f
+    one = cfix(1.0).v
+    four = cfix(4.0).v
+    n = MemValue(cint(0))
+    aa = MemValue(cint(a))
+    if_then((aa < one) + (aa >= four))
+    @do_while
+    def _():
+        if_then(aa < one)
+        n.write(n+1)
+        aa.write( aa << 2)
+        end_if()
+        
+        if_then(aa >= four)
+        n.write(n-1)
+        aa.write(aa >> 2)
+        end_if()
+        print_ln("aa: %s, n: %s", cfix(aa), n)
+        return (aa < one) + (aa >= four)
+    end_if()
+    # Compute inverse sqare root
+    invsqrt_aa = cfix_invsqrt(aa, k, f)
+    # Square root of aa
+    sqrt_aa = shift_two(invsqrt_aa * aa, f) 
+    # Shift back 
+    sqrt_x = cfix(sqrt_aa) * cfix(2**(f-n)) 
+    return sqrt_x
