@@ -1361,7 +1361,10 @@ def cfix_invsqrt(a, k, f):
     return y[rounds - 1]
 
 def cfix_sqrt(x):
-    
+    """ 
+        Compute sqrt(x).
+        type(x) = cfix
+    """
     # sqrt(x) = 2^-n * sqrt( 4^n *x )
     a = x.v
     k = x.k
