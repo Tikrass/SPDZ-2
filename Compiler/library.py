@@ -1336,8 +1336,9 @@ def Norm(b, k, f, kappa, simplex_flag=False):
 def cfix_invsqrt(a, k, f): 
     """ 
         Compute reciprocal square root of cfix(a) based on taylor series 
-        estimation and Goldschmidt’s algorithm.
+        estimation and Goldschmidt's algorithm.
     """
+    
     rounds = f/2 # Maybe find better parameter
     three = cfix(3).v
     B = Array(rounds, cint)

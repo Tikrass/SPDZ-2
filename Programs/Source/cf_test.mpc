@@ -121,12 +121,7 @@ class Test:
         #########################
         if DEBUG >= VERBOSE_VALUES:
             print_ln("Model:")
-            @for_range(n)
-            def user_loop(i):
-                @for_range(n)
-                def user_loop(j):
-                    print_str('%s ', CF.model[i][j].reveal())
-                print_ln(' ')
+            CF.print_model()
             
         #########################
         # Prediction
@@ -150,6 +145,7 @@ class Test:
             print_str("\r")
         stop_timer(3)
         start_timer(4)
+        
         if DEBUG >= VERBOSE_VALUES:
             print_ln("Prediction TRE:")
         @for_range(n)
@@ -171,7 +167,7 @@ class Test:
         #########################
         CF.delete()
    
-T = Test().eval_data() 
+T = Test().test_data() 
 T.test(False, False)
 T.test(False, True)
 
