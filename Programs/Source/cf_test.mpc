@@ -305,9 +305,9 @@ class IBTest(Test):
         #########################
         CF.delete()
 
-T = UBTest().test_data() 
+T = UBTest().eval_data(100, m=None) 
 T.test(10, False)
-T = IBTest().test_data() 
+T = IBTest().eval_data(n=None,m=100)
 T.test(20)
 #T.test(False, True)
 
