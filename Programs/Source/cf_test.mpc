@@ -1,7 +1,8 @@
-from collaborative_filter import SparseUBCosineCF, UBCosineCF
+from collaborative_filter import SparseUBCosineCF, UBCosineCF, IBCosineCF
 from recommender import *
 import sys
 from config_mine import *
+from math import sqrt
 
 # Program parameters
 sys.setrecursionlimit(100000)
@@ -10,12 +11,12 @@ program.bit_length = 80
 program.security = 40
 
 # Verbosity
-DEBUG = VERBOSE_PROGRESS
+DEBUG = INTERMEDIATE
 
 # IO Interface
 IO = InputFp(0)
 
-class Test:
+class Test():
     def __init__(self):
         self.n = 0
         self.m = 0
@@ -33,6 +34,18 @@ class Test:
                  [0.0,0.0,0.0,7.9,4.5,9.0,2.0,2.0,8.0,3.0,5.0,0.0,0.0,5.0,6.0,0.0,3.0,0.0]]
         
         return self
+    
+    def small_data(self):
+        self.n = 5
+        self.m = 5
+        self.rowcap = 5
+        self.M =[[0.0,1.0,3.0,4.0,0.0],
+                 [0.0,1.0,3.0,4.0,3.0],
+                 [0.0,1.0,3.0,4.0,2.5],
+                 [0.0,1.0,3.0,4.0,3.5],
+                 [0.0,1.0,3.0,4.0,0.0]]
+        
+        return self
 
     def eval_data(self, n=None, m=None): 
         folder = "Prep-Data/ml-latest-small"
@@ -47,9 +60,9 @@ class Test:
         return self
 
 
+class UBTest(Test):    
     
-    
-    def test(self, auto_norms, sparse):
+    def test(self, id, sparse):
         
         n = self.n
         m = self.m
@@ -63,6 +76,7 @@ class Test:
             CF = UBCosineCF(n,m)
             
         print_ln("############################\nNEW TEST RUN")
+        print_ln("User-based CF")
         print_ln("n = %s\nm = %s", n, m)
         if sparse:
             print_ln("sparse:\nrowcap = %s", self.rowcap)
@@ -76,15 +90,20 @@ class Test:
             sys.stdout.write(str(i)+'\r')
             IO.append_fp_array([int(j* (2**sfix.f)) for j in M[i]],capacity=cap)
             
+        print("Preparing bitrating input.")
+        for i in range(n):
+            sys.stdout.write(str(i)+'\r')
+            IO.append_fp_array(map(lambda x: 1 if x > 0 else 0, M[i]),capacity=cap)
+            
             
         print("Preparing norm input.")
-        if not auto_norms:
-            # Squared sums of user-vectors
-            for i in range(n):
-                s = 0
-                for j in range(m):
-                    s += M[i][j]**2
-                IO.append_fp(int(s * (2**sfix.f)))
+        # Squared sums of user-vectors
+        for i in range(n):
+            s = 0
+            for j in range(m):
+                s += M[i][j]**2
+            s = sqrt(s)
+            IO.append_fp(int(s * (2**sfix.f)))
                 
     
         
@@ -94,27 +113,30 @@ class Test:
         #########################
         
         
-        start_timer(1)
+        start_timer(id+1)
         if DEBUG >= VERBOSE:
             print_ln("Loading private input.")
         @for_range(n)
         def user_loop1(i):
-            CF.load_raitings_from(i, 0)
+            CF.load_ratings_from(i, 0)
             
-        if auto_norms:
-            CF.calc_normalization_factors()
-        else :
-            @for_range(n)
-            def user_loop2(i):
-                CF.load_normalization_from(i, 0)
-        stop_timer(1)
+        @for_range(n)
+        def user_loop1(i):
+            CF.load_bitratings_from(i, 0)
+
+        @for_range(n)
+        def user_loop2(i):
+            CF.load_normalization_from(i, 0)
+        stop_timer(id+1)
+        
+        
         
         #########################
         # Building Model
         #########################
-        start_timer(2)
+        start_timer(id+2)
         CF.build_model()
-        stop_timer(2)
+        stop_timer(id+2)
         
         #########################
         # Output Model
@@ -126,7 +148,7 @@ class Test:
         #########################
         # Prediction
         #########################
-        start_timer(3)
+        start_timer(id+3)
         if DEBUG >= VERBOSE_VALUES:
             print_ln("Prediction ALL:")
         @for_range(n)
@@ -143,8 +165,8 @@ class Test:
                 print_ln(' ')
         if DEBUG == VERBOSE_PROGRESS:
             print_str("\r")
-        stop_timer(3)
-        start_timer(4)
+        stop_timer(id+3)
+        start_timer(id+4)
         
         if DEBUG >= VERBOSE_VALUES:
             print_ln("Prediction TRE:")
@@ -154,23 +176,142 @@ class Test:
             def item_loop(j):
                 if DEBUG == VERBOSE_PROGRESS:
                     print_str("\ruser %s item %s       ", i, j)
-                prediction = CF.predict_rating_thresholded(i,j,cfix(0.05)).reveal()
+                prediction = CF.predict_rating_thresholded(i,j,cfix(0.3)).reveal()
                 if DEBUG>=VERBOSE_VALUES:
                     print_str('%s ', prediction)
             if DEBUG>=VERBOSE_VALUES:
                 print_ln(' ')
         if DEBUG == VERBOSE_PROGRESS:
             print_str("\r")
-        stop_timer(4)
+        stop_timer(id+4)
         #########################
         # Clean up memory
         #########################
         CF.delete()
-   
-T = Test().test_data() 
-T.test(False, False)
-T.test(False, True)
+
+class IBTest(Test):
+    
+    def test(self, id):
+        n = self.n
+        m = self.m
+        M = self.M
+        
+        cap = None
+        CF = IBCosineCF(n,m)
+            
+        print_ln("############################\nNEW TEST RUN")
+        print_ln("Item-based CF")
+        print_ln("n = %s\nm = %s", n, m)
+        print_ln("")
+            
+        #########################
+        # Preparing Private Input
+        #########################
+        print("Preparing rating input.")
+        for i in range(n):
+            sys.stdout.write(str(i)+'\r')
+            IO.append_fp_array([int(j* (2**sfix.f)) for j in M[i]],capacity=cap)
+            
+        print("Preparing bitrating input.")
+        for i in range(n):
+            sys.stdout.write(str(i)+'\r')
+            IO.append_fp_array(map(lambda x: 1 if x > 0 else 0, M[i]),capacity=cap)
+            
+        print("Preparing rating2 input.")
+        for i in range(n):
+            sys.stdout.write(str(i)+'\r')
+            IO.append_fp_array([int((j**2) *  (2**sfix.f)) for j in M[i]],capacity=cap)
+                
+    
+        
+        
+        #########################
+        # Reading Private Input
+        #########################
+        
+        
+        start_timer(id+1)
+        if DEBUG >= VERBOSE:
+            print_ln("Loading private input.")
+        @for_range(n)
+        def user_loop1(i):
+            CF.load_ratings_from(i, 0)
+            
+        @for_range(n)
+        def user_loop1(i):
+            CF.load_bitratings_from(i, 0)
+            
+        @for_range(n)
+        def user_loop2(i):
+            CF.load_ratings2_from(i, 0)
+        stop_timer(id+1)
+        
+        #########################
+        # Building Model
+        #########################
+        start_timer(id+2)
+        #CF.calc_normalization_factors()
+        CF.build_model()
+        stop_timer(id+2)
+        
+        #########################
+        # Output Model
+        #########################
+        if DEBUG >= VERBOSE_VALUES:
+            print_ln("Model:")
+            CF.print_model()
+            
+        #########################
+        # Prediction
+        #########################
+        start_timer(id+3)
+        if DEBUG >= VERBOSE_VALUES:
+            print_ln("Prediction ALL:")
+        @for_range(n)
+        def user_loop(i):
+            @for_range(m)
+            def item_loop(j):
+                if DEBUG == VERBOSE_PROGRESS:
+                    print_str("\ruser %s item %s       ", i, j)
+                prediction = CF.predict_rating(i,j).reveal()
+                if DEBUG>=VERBOSE_VALUES:
+                    print_str('%s ', prediction)
+                    
+            if DEBUG>=VERBOSE_VALUES:
+                print_ln(' ')
+        if DEBUG == VERBOSE_PROGRESS:
+            print_str("\r")
+        stop_timer(id+3)
+        start_timer(id+4)
+        
+        if DEBUG >= VERBOSE_VALUES:
+            print_ln("Prediction TRE:")
+        @for_range(n)
+        def user_loop(i):
+            @for_range(m)
+            def item_loop(j):
+                if DEBUG == VERBOSE_PROGRESS:
+                    print_str("\ruser %s item %s       ", i, j)
+                prediction = CF.predict_rating_thresholded(i,j,cfix(0.5)).reveal()
+                if DEBUG>=VERBOSE_VALUES:
+                    print_str('%s ', prediction)
+            if DEBUG>=VERBOSE_VALUES:
+                print_ln(' ')
+        if DEBUG == VERBOSE_PROGRESS:
+            print_str("\r")
+        stop_timer(id+4)
+        #########################
+        # Clean up memory
+        #########################
+        CF.delete()
+
+T = UBTest().test_data() 
+T.test(10, False)
+T = IBTest().test_data() 
+T.test(20)
+#T.test(False, True)
 
 # Write private input to file
 IO.gen_input_fp()
+
         
