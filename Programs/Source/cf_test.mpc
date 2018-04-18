@@ -305,10 +305,16 @@ class IBTest(Test):
         #########################
         CF.delete()
 
-T = UBTest().eval_data(100, m=None) 
+T = UBTest().eval_data(100, m=5000) 
 T.test(10, False)
-T = IBTest().eval_data(n=None,m=100)
-T.test(20)
+T = UBTest().eval_data(200, m=5000) 
+T.test(20, False)
+T = UBTest().eval_data(300, m=5000) 
+T.test(30, False)
+T = UBTest().eval_data(400, m=5000) 
+T.test(40, False)
+T = UBTest().eval_data(500, m=5000) 
+T.test(50, False)
 #T.test(False, True)
 
 # Write private input to file
