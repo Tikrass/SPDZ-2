@@ -11,7 +11,7 @@ program.bit_length = 80
 program.security = 40
 
 # Verbosity
-DEBUG = INTERMEDIATE
+DEBUG = 2
 
 # IO Interface
 IO = InputFp(0)
