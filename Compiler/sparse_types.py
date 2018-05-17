@@ -1,12 +1,12 @@
 from Compiler.library import *
 from Compiler.types import *
 
-class SparseArray(Array):
-    def __init__(self, length, capacity, value_type, address=None):
+class sintSparseRatingArray(Array):
+    def __init__(self, length, capacity,value_type, address=None):
         self.length = length
         self.capacity = capacity
         self.value_type = value_type
-        self.array = Array(capacity*2, value_type, address)
+        self.array = Array(capacity*3, value_type, address)
         self.address = self.array.address
         self.tailpointer = cint(0)
         self.readonly = False
@@ -18,33 +18,45 @@ class SparseArray(Array):
         self.array.delete()
     
     def _getkey(self, index):
-        return self.array[2*index]-1
+        return self.array[3*index]-1
     
     def _setkey(self, index, key):
         self.array[2*index] = key+1
     
-    def _getval(self, index):
-        return self.array[2*index+1]
+    def _getr(self, index):
+        return self.array[3*index+1]
     
-    def _setval(self, index, val):
-        self.array[2*index+1] = val
+    def _setr(self, index, r):
+        self.array[2*index+1] = r
     
-    @method_block                      
-    def __getitem__(self, key):
-        if isinstance(key, slice):
-            return Array.__getitem__(self, key)
+    def _setr2(self, index, r2):
+        self.array[2*index+2] = r2
         
-        res = MemValue(sint(0))
+    def _getr2(self, index):
+        return self.array[3*index+2]
+                          
+    def get_ratings(self, key):        
+        accu1 = MemValue(sint(0))
+        accu2 = MemValue(sint(0))
         @library.for_range(self.tailpointer)
         def f(i):
             k = self._getkey(i)
-            match = k == key
-            val = self._getval(i)
-            res.write(match.if_else(val, res.read()))
-            #print_ln("match %s, res %s", match.reveal(), res.reveal())
-        #val = res.read()
-        #res.delete()
-        return res.read()  
+            comp = k == key
+            r1 = self._getr(i)
+            accu1.write(match.if_else(r1, accu1.read()))
+            r2 = self._getr2(i)
+            accu2.write(match.if_else(r2, accu2.read()))
+        return accu1.read(), accu2.read() 
+    
+    def get_rating(self, key):
+        accu1 = MemValue(sint(0))
+        @library.for_range(self.tailpointer)
+        def f(i):
+            k = self._getkey(i)
+            comp = k == key
+            r1 = self._getr(i)
+            accu1.write(match.if_else(r1, accu1.read()))
+        return accu1.read()
     
     def __setitem__(self, key, value):   
         if isinstance(key, slice):
@@ -52,7 +64,8 @@ class SparseArray(Array):
         if self.readonly:
             raise CompileError("Sparse Array is in readonly mode.")
         self._setkey(self.tailpointer, key)
-        self._setval(self.tailpointer, value)
+        self._setr(self.tailpointer, value[0])
+        self._setr2(self.tailpointer, value[1])
         self.tailpointer += 1
     
     def writable(self, tailpointer=0):
@@ -61,15 +74,17 @@ class SparseArray(Array):
         
     
     @classmethod
-    def get_raw_input_from(cls, player, length, capacity, value_type, address=None):
+    def get_raw_input_from(cls, player, length, capacity,value_type, address=None):
         res = cls(length, capacity, value_type, address)
         @library.for_range(capacity)
         def get_entry(i):
             k = res.value_type.get_raw_input_from(player)
-            v = res.value_type.get_raw_input_from(player)
+            r = res.value_type.get_raw_input_from(player)
+            r2 = res.value_type.get_raw_input_from(player)
             res._setkey(i, k)
-            res._setval(i, v)
-        tailpointer = sint.get_raw_input_from(player)
+            res._setr(i, r)
+            res._setr2(i,r2)
+        tailpointer = sint.get_raw_input_from(player).reveal()
         res.writable(tailpointer)
         return res, tailpointer
         
@@ -79,13 +94,13 @@ class SparseRowMatrix(Matrix):
         self.rows = rows
         self.columns = columns
         self.rowcap = rowcap
-        self.matrix = Matrix(rows, columns*2, value_type)
+        self.matrix = Matrix(rows, columns*3, value_type)
     
     def delete(self):
         self.matrix.delete() 
 
     def __getitem__(self, index):
-        return SparseArray(self.columns,self.rowcap, self.matrix.value_type, self.matrix[index].address)
+        return SparseArray(self.columns,self.rowcap, self.value_type, self.matrix[index].address)
     
 class sfixSparseArray(Array):
     def __init__(self, length, capacity, address=None):
@@ -101,19 +116,23 @@ class sfixSparseArray(Array):
     
     _getkey = lambda self, index: self.array._getkey(index)
     _setkey = lambda self, index, key: self.array._setkey(index,key)
-    _getval = lambda self, index: sfix(*self.array._getval(index))
-    _setval = lambda self, index, val: self.array._setval(index,val.v)
+    _getr = lambda self, index: sfix(*self.array._getr(index))
+    _setr = lambda self, index, val: self.array._setr(index,val.v)
+    _getr2 = lambda self, index: sfix(*self.array._getr2(index))
+    _setr2 = lambda self, index, val: self.array._setr2(index,val.v)
     writable =  lambda self, *args : self.array.writable(*args)
     
     def __getitem__(self, index):
         if isinstance(index, slice):
             return Array.__getitem__(self, index)
-        return sfix(*self.array[index])
+        r1, r2 = self.array[index]
+        
+        return sfix(*r1), sfix(*r2)
 
     def __setitem__(self, index, value):
         if isinstance(index, slice):
             return Array.__setitem__(self, index, value)
-        self.array[index] = value.v
+        self.array[index] = (value[0].v, value[1].v)
     
     @classmethod
     def get_raw_input_from(cls, player, length, capacity, address=None):
@@ -129,7 +148,7 @@ class sfixSparseRowMatrix(Matrix):
         self.columns = columns
         self.rowcap = rowcap
         self.value_type = sfix
-        self.matrix = Matrix(rows, columns*2, sint)
+        self.matrix = Matrix(rows, columns*3, sint)
         self.address = self.matrix.address
     
     def delete(self):

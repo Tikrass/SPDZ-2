@@ -4,184 +4,151 @@ from Compiler.sparse_types import *
 from config_mine import *
         
 class UserBasedModel(object):
-    def __init__(self, nusers, nitems, ratings, bitratings):
-        self.model = sfixMatrix(nusers,nusers) # Similarity model
-        self.nusers = nusers # Number of users
-        self.nitems = nitems # Number of items
-        self.ratings = ratings # Rating matrix
-        self.bitratings = bitratings
-        
-    def load_ratings_from(self, user, player):
-        ratings = self.ratings[user]
-        self._load_ratings_from(player, ratings)
-        
-    def load_bitratings_from(self, user, player):
-        bitratings = self.bitratings[user]
-        self._load_bitratings_from(player, bitratings)
-        
+    def __init__(self, n, m, ratings, bitratings):
+        self.S = sfixMatrix(n,m) # Similarity model
+        self.n = n # Number of users
+        self.m = n # Number of items
+        self.R = ratings # Rating matrix
+        self.B = bitratings # Boolean ratings
     
     def build_model(self):
         if DEBUG >= VERBOSE:
             print_ln("Building secure shared similarity model")
-        @for_range(self.nusers)
-        def users_loop1(i):
-            @for_range(i,self.nusers)
-            def users_loop2(j):
+        @for_range(self.n)
+        def users_loop1(u):
+            @for_range(u,self.n)
+            def users_loop2(v):
                 if DEBUG >= VERBOSE_PROGRESS:
-                    print_str("\r%s to %s     ", i,j)
-                ratings_j = self.ratings[j]
-                sim = self._build_model(i, j)
-                self.model[i][j] = sim
-                self.model[j][i] = sim
+                    print_str("\r%s to %s     ", u,v)
+                s_uv = self._build_model(u, v)
+                self.S[u][v] = s_uv
+                self.S[v][u] = s_uv
         
         if DEBUG >= VERBOSE_PROGRESS:
             print_str("\r")
             
     def print_model(self):
-            @for_range(self.nusers)
-            def user_loop(i):
-                @for_range(self.nusers)
-                def user_loop(j):
-                    print_str('%s ', self.model[i][j].reveal())
+            @for_range(self.n)
+            def user_loop(u):
+                @for_range(self.n)
+                def user_loop(v):
+                    print_str('%s ', self.S[u][v].reveal())
                 print_ln(' ')
     
     @method_block
-    def predict_rating_all(self, user, item):
+    def range_prediction(self, v, i, epsilon):
         if DEBUG >= INTERMEDIATE:
-            print_ln("Predicting rating:\n user %s, item %s", user, item)
+            print_ln("Predicting rating:\n user %s, item %s", v, i)
         
-        rating_sum = sfix.MemValue(0)
-        normalization = sfix.MemValue(0)
+        r = sfix.MemValue(0)
+        n = sfix.MemValue(0)
         
-        @for_range(self.nusers)
-        def user_loop(i):
-            similarity = self.model[user][i]
-            rating_other = self.ratings[i][item]
-            bitrating_other = self.bitratings[i][item]
-            if_then(i != user)
-            rating_sum.write(rating_sum + rating_other * similarity)
-            normalization.write(normalization + bitrating_other * similarity)
+        @for_range(self.n)
+        def user_loop(u):
+            if_then(u != v)
+            c = (self.S[u][v] >= epsilon) * self.B[u][v]
+            r.write(r + c * self.S[u][v] * self.R[u][i] )
+            n.write(n + c * self.S[u][v])
             #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
             end_if()
-        prediction = rating_sum.read() / normalization.read()
         
-        #rating_sum.delete()
-        #normalization.delete()
-        
-        return prediction     
+        return r.read() / n.read()   
     
-    @method_block
-    def predict_rating_thresholded(self, user, item, t):
-        if DEBUG >= INTERMEDIATE:
-            print_ln("Predicting rating:\n user %s, item %s, threshold %s", user, item, t)
-        
-        rating_sum = sfix.MemValue(0)
-        normalization = sfix.MemValue(0)
-        
-        @for_range(self.nusers)
-        def user_loop(i):
-            similarity = self.model[user][i]
-            rating_other = self.ratings[i][item]
-            bitrating_other = self.bitratings[i][item]
-            if_then(i != user)
-            condition = (similarity >= t)
-            rating_sum.write(condition.if_else(
-                    rating_sum + rating_other * similarity,
-                    rating_sum.read()
-                            ))
-            normalization.write(condition.if_else(
-                    normalization + bitrating_other * similarity,
-                    normalization.read()
-                            ))
-            #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
+    def count_range(self, v, i, epsilon):
+        c = sint.MemValue(sint(0))
+        @for_range(self.n)
+        def user_loop(u):
+            if_then(u != v)
+            c.write(c + self.S[u][v] > epsilon * self.B[u][v])
             end_if()
-        prediction = rating_sum.read() / normalization.read()
-        
-        #rating_sum.delete()
-        #normalization.delete()
-        
-        return prediction     
+        return c.read()
     
     @method_block
-    def predict_rating_knn(self, user, item, k):
-        pass
-    
-    predict_rating = predict_rating_all
+    def peer_prediction(self, v, i, k):
+        epsilon = cfix.MemValue(cfix(0.5))
+        delta = cfix.MemValue(cfix(0.25))
+        @do_while
+        def search_loop():
+            c = self.count_range(v, i, epsilon.read()).reveal()
+            if_then(c < k)
+            epsilon.write(epsilon.read() - delta.read())
+            end_if()
+            if_then(c > k)
+            epsilon.write(epsilon.read() + delta.read())
+            end_if()
+            delta.write(delta / 2)
+            #print_ln("e: %s, d: %s, c:%s", epsilon.read(), delta.read(), c)
+            return (c != k and delta != 0)
+        return self.range_prediction(v, i, epsilon.read())
+        
+
+    predict_rating = lambda self, v,i : self.peer_prediction(v, i, 2)
         
     
     def delete(self):
-        self.model.delete()
-        self.ratings.delete()
+        self.S.delete()
+        self.R.delete()
+        self.B.delete()
 
 class UBCosineCF(UserBasedModel):
     
-    def __init__(self, nusers, nitems):
-        self.norms = sfixArray(nusers)  # Normalization factors for the similarity measure.
-        UserBasedModel.__init__(self, nusers, nitems, sfixMatrix(nusers,nitems), Matrix(nusers,nitems,sint))
+    def __init__(self, n, m):
+        self.R2 = sfixMatrix(n,m)
+        UserBasedModel.__init__(self, n, m, sfixMatrix(n,m), Matrix(n,m,sint))
             
-    def _load_ratings_from(self, player, ratings):
-        @for_range(self.nitems)
+            
+    def load_ratings_from(self, user, player):
+        ratings = self.R[user]
+        @for_range(self.m)
         def items_loop1(i):
             r = sint.get_raw_input_from(player)
             ratings[i] = sfix(*r)
             
-    def _load_bitratings_from(self, player, bitratings):
-        @for_range(self.nitems)
+    def load_ratings2_from(self, user, player):
+        ratings2 = self.R2[user]
+        @for_range(self.m)
+        def items_loop(i):
+            r2 = sint.get_raw_input_from(player)
+            ratings2[i] = sfix(*r2)
+        
+    def load_bitratings_from(self, user, player):
+        bitratings = self.B[user]
+        @for_range(self.m)
         def items_loop2(i):
             bitratings[i] = sint.get_raw_input_from(player)
             
-    def load_normalization_from(self, user, player):
-        norm = sint.get_raw_input_from(player)
-        self.norms[user] = sfix(*norm)
-    
-    def set_normalization_factor(self, user, value):
-        self.norms[user] = value
-        
-    def calc_normalization_factor(self, user):
-        norm2 = sfix.MemValue(0)
-        @for_range(self.nitems)
-        def items_loop(i):
-            norm2 += self.ratings[user][i]**2
-        norm = norm2.reveal().sqrt()
-        self.set_normalization_factor(user, norm)
-    
-    def calc_normalization_factors(self):
-        @for_range(self.nusers)
-        def users_loop(i):
-            self.calc_normalization_factor(i)
     
     @method_block
-    def cosine_sim(self, i,j):
-        a = self.ratings[i]
-        b = self.ratings[j]
-        norma = self.norms[i]
-        normb = self.norms[j]
+    def cosine_sim(self, u,v):
         
         dot = sfix.MemValue(0)
-        @for_range(a.length)
-        def product_loop(i):
-            dot.write(dot.read() + a[i] * b[i])
+        sumu = sfix.MemValue(0)
+        sumv = sfix.MemValue(0)
+        @for_range(self.m)
+        def item_loop(i):
+            dot.write(dot.read() + self.R[u][i] * self.R[v][i])
+            sumu.write(sumu.read() + self.R2[u][i] * self.B[v][i])
+            sumv.write(sumv.read() + self.R2[v][i] * self.B[u][i])
+        
+        cos = dot/(sumu.read() * sumv.read()).sqrt() 
         
         if DEBUG >= INTERMEDIATE:
             print_ln("dot: %s", dot.reveal())
-            print_ln("norma: %s, normb: %s", norma.reveal(), normb.reveal())
-        cos = (dot/(norma * normb))
-        if DEBUG >= INTERMEDIATE:
+            print_ln("sumu: %s, sumv: %s", sumu.reveal(), sumv.reveal())
             print_ln("cos: %s", cos.reveal())
             print_ln(" ")
+            
         return cos
     
-    _build_model = lambda self, i, j :  self.cosine_sim(i,j)
+    _build_model = lambda self, u, v :  self.cosine_sim(u,v)
             
     def delete(self):
-        self.norms.delete()
+        self.R2.delete()
         UserBasedModel.delete(self)
 
 class SparseUBCosineCF(UBCosineCF):
-    def __init__(self, nusers, nitems, capacity):
-        self.norms = sfixArray(nusers)  # Normalization factors for the similarity measure.
-        UserBasedModel.__init__(self, nusers, nitems, sfixSparseRowMatrix(nusers, nitems, capacity))
-        self.capacity = capacity
+    def __init__(self, n, m, capacity):
+        UserBasedModel.__init__(self, n, m, sfixSparseRowMatrix(n, m))
         
     def _load_ratings_from(self, player, ratings):
         sfixSparseArray.get_raw_input_from(player, self.nitems, self.capacity, address=ratings.address)
@@ -248,181 +215,117 @@ class SparseUBCosineCF(UBCosineCF):
         #pb.delete()
         return dot.read()
 
-class ItemBasedModel(object):
-    def __init__(self, nusers, nitems, ratings, bitratings):
-        self.model = cfixMatrix(nitems,nitems) # Similarity model
-        self.ratings = ratings
-        self.bitratings = bitratings
-        self.nusers = nusers # Number of users
-        self.nitems = nitems # Number of items
+class IBCosineCF(object):
+    def __init__(self, n, m):
+        self.S = cfixMatrix(n,m) # Similarity model
+        self.R = sfixMatrix(n,m)
+        self.R2 = sfixMatrix(n,m)
+        self.B = Matrix(n,m,sint)
+        self.n = n # Number of users
+        self.m = m # Number of items
+
         
     def load_ratings_from(self, user, player):
-        ratings = self.ratings[user]
-        self._load_ratings_from(player, ratings)
+        ratings = self.R[user]
+        @for_range(self.m)
+        def items_loop(i):
+            r = sint.get_raw_input_from(player)
+            ratings[i] = sfix(*r)
+            
+    def load_ratings2_from(self, user, player):
+        ratings2 = self.R2[user]
+        @for_range(self.m)
+        def items_loop(i):
+            r2 = sint.get_raw_input_from(player)
+            ratings2[i] = sfix(*r2)
         
     def load_bitratings_from(self, user, player):
-        bitratings = self.bitratings[user]
-        self._load_bitratings_from(player, bitratings)
+        bitratings = self.B[user]
+        @for_range(self.m)
+        def items_loop2(i):
+            bitratings[i] = sint.get_raw_input_from(player)
         
     def build_model(self):
         if DEBUG >= VERBOSE:
             print_ln("Building secure shared similarity model")
-        @for_range(self.nitems)
+        @for_range(self.m)
         def item_loop1(i):
-            @for_range(i,self.nitems)
+            @for_range(i,self.m)
             def item_loop2(j):
                 if DEBUG >= VERBOSE_PROGRESS:
                     print_str("\r%s to %s     ", i,j)
-                ratings_j = self.ratings[j]
-                sim = self._build_model(i,j)
-                self.model[i][j] = sim
-                self.model[j][i] = sim
-        
+                s_ij = self._build_model(i,j)
+                self.S[i][j] = s_ij
+                self.S[j][i] = s_ij
         if DEBUG >= VERBOSE_PROGRESS:
             print_str("\r")
             
-    def print_model(self):
-        @for_range(self.nitems)
-        def item_loop(i):
-            @for_range(self.nitems)
-            def item_loop(j):
-                print_str('%s ', self.model[i][j])
-            print_ln(' ')
-    
-    
-    @method_block
-    def predict_rating_all(self, user, item):
-        if DEBUG >= INTERMEDIATE:
-            print_ln("Predicting rating:\n user %s, item %s", user, item)
-        
-        rating_sum = sfix.MemValue(0)
-        normalization = sfix.MemValue(0)
-        
-        @for_range(self.nitems)
-        def item_loop(i):
-            similarity = self.model[item][i]
-            rating_other = self.ratings[user][i]
-            bitrating_other = self.bitratings[user][i]
-            if_then(i != item)
-            rating_sum.write(rating_sum + rating_other * similarity)
-            normalization.write(normalization + bitrating_other * similarity)
-            #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
-            end_if()
-        prediction = rating_sum.read() / normalization.read()
-        
-        #rating_sum.delete()
-        #normalization.delete()
-        
-        return prediction     
-    
-    @method_block
-    def predict_rating_thresholded(self, user, item, t):
-        if DEBUG >= INTERMEDIATE:
-            print_ln("Predicting rating:\n user %s, item %s, threshold %s", user, item, t)
-        
-        rating_sum = sfix.MemValue(0)
-        normalization = sfix.MemValue(0)
-        
-        @for_range(self.nitems)
-        def item_loop(i):
-            similarity = self.model[item][i]
-            rating_other = self.ratings[user][i]
-            bitrating_other = self.bitratings[user][i]
-            if_then(i != item and similarity >= t)
-            rating_sum.write(rating_sum + rating_other * similarity)
-            normalization.write(normalization + bitrating_other * similarity)
-            #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
-            end_if()
-        prediction = rating_sum.read() / normalization.read()
-        
-        #rating_sum.delete()
-        #normalization.delete()
-        
-        return prediction     
-    
-    @method_block
-    def predict_rating_knn(self, user, item, k):
-        pass
-    
-    predict_rating = predict_rating_all
-        
-    
-    def delete(self):
-        self.model.delete()
-        self.ratings.delete()
-        self.ratings2.delete()
-
-
-class IBCosineCF(ItemBasedModel):
-    def __init__(self, nusers, nitems):
-        self.norms = sfixArray(nitems)
-        self.ratings2 = sfixMatrix(nusers,nitems)
-        ItemBasedModel.__init__(self, nusers, nitems, sfixMatrix(nusers,nitems), Matrix(nusers,nitems,sint))
             
-    def _load_ratings_from(self, player, ratings):
-        @for_range(self.nitems)
-        def items_loop(i):
-            r = sint.get_raw_input_from(player)
-            ratings[i] = sfix(*r)
-    
-    def _load_bitratings_from(self, player, bitratings):
-        @for_range(self.nitems)
-        def items_loop2(i):
-            bitratings[i] = sint.get_raw_input_from(player)
-    
-    def load_ratings2_from(self, user, player):
-        ratings2 = self.ratings2[user]
-        @for_range(self.nitems)
-        def items_loop(i):
-            r2 = sint.get_raw_input_from(player)
-            ratings2[i] = sfix(*r2)
-            
-    def set_normalization_factor(self, item, value):
-        self.norms[item] = value
-    
-    def calc_normalization_factor(self, item):
-        norm = sfix.MemValue(0)
-        @for_range(self.nusers)
-        def users_loop(i):
-            norm.write(norm+ self.ratings2[i][item])
-        self.set_normalization_factor(item, norm)
-    
-    def calc_normalization_factors(self):
-        @for_range(self.nitems)
-        def users_loop(i):
-            self.calc_normalization_factor(i)
-    
-   
-    
     @method_block
     def cosine_sim(self,i,j):
         dot = sfix.MemValue(0)
-        normi2 = sfix.MemValue(0)
-        normj2 = sfix.MemValue(0)
-        @for_range(self.nusers)
-        def user_loop(u):
-            dot.write(dot+self.ratings[u][i] * self.ratings[u][j])
-            normi2.write(normi2+self.bitratings[u][j] * self.ratings2[u][i])
-            normj2.write(normj2+self.bitratings[u][i] * self.ratings2[u][j])
-            if DEBUG >= INTERMEDIATE_FULL:
-                print_ln("dot: %s", dot.reveal())
-                print_ln("normi2: %s, normj2: %s", normi2.reveal(), normj2.reveal())
+        sumi = sfix.MemValue(0)
+        sumj = sfix.MemValue(0)
+        @for_range(self.n)
+        def item_loop(u):
+            dot.write(dot.read() + self.R[u][i] * self.R[u][j])
+            sumi.write(sumi.read() + self.R2[u][i] * self.B[u][j])
+            sumj.write(sumj.read() + self.R2[u][j] * self.B[u][i])
         
-        normi = normi2.reveal().sqrt()
-        normj = normj2.reveal().sqrt()
+        cos = dot.reveal()/(sumi.read() * sumj.read()).reveal().sqrt()
+        
         if DEBUG >= INTERMEDIATE:
             print_ln("dot: %s", dot.reveal())
-            print_ln("normi: %s, normj: %s", normi, normj)
-        cos = dot.reveal()/(normi*normj)
-        if DEBUG >= INTERMEDIATE:
+            print_ln("sumi: %s, sumj: %s", sumi.reveal(), sumj.reveal())
             print_ln("cos: %s", cos)
+            print_ln(" ")
+            
         return cos
     
     _build_model = lambda self, i, j :  self.cosine_sim(i,j)
             
+    def print_model(self):
+        @for_range(self.m)
+        def item_loop(i):
+            @for_range(self.m)
+            def item_loop(j):
+                print_str('%s ', self.S[i][j])
+            print_ln(' ')
+    
+    
+    @method_block
+    def range_prediction(self, u, j, epsilon):
+        if DEBUG >= INTERMEDIATE:
+            print_ln("Predicting rating:\n user %s, item %s", u, j)
+        
+        rating = cfix.MemValue(cfix(0))
+        norm = cfix.MemValue(cfix(0))
+        
+        @for_range(self.m)
+        def item_loop(i):
+            if_then(i != j)
+            c = (self.S[i][j] >= epsilon) * self.B[u][i].reveal()
+            if_then(c)
+            rating.write(rating.read() + self.S[i][j] * self.R[u][i].reveal() )
+            norm.write(norm + self.S[i][j])
+            #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
+            end_if()
+            end_if()
+        
+        return rating.read() / norm.read()   
+    
+    @method_block
+    def peer_prediction(self, user, item, k):
+        pass
+
+    predict_rating = lambda self, v,i : self.range_prediction(v, i, cfix(0.0))
+        
+    
     def delete(self):
-        self.norms.delete()
-        ItemBasedModel.delete(self)
+        self.S.delete()
+        self.R.delete()
+        self.R2.delete()
+        self.B.delete()
         
         
 def OptimalCollaborativeFilter(nusers, nitems, capacity=None):

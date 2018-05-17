@@ -1333,6 +1333,79 @@ def Norm(b, k, f, kappa, simplex_flag=False):
 
     return part_reciprocal, signed_acc
 
+def NormSQ(x, k, f):
+    """
+        Assume x >= 0!
+        Computes secret integer values [c], [v], [m] and [w] st.
+        2^{k-1} <= c < 2^k and c = x*v
+        If 2^{m-1} <= x < 2^m then v = 2^{k-m} and w = 2^{m/2} (m even) or w = 2^{m-1/2} (m odd)
+    """
+
+    #next 2 lines actually compute the SufOR for little indian encoding
+    bits = x.bit_decompose(k)[::-1]
+    suffixes = PreOR(bits)[::-1]
+
+    z = [0] * k
+    for i in range(k - 1):
+        z[i] = suffixes[i] - suffixes[i+1]
+    z[k - 1] = suffixes[k-1]
+    #doing complicated stuff to compute v = 2^{k-m}
+    acc_v = cint(0)
+    acc_m = cint(0)
+    acc_w = cint(0)
+    for i in range(k):
+        acc_v += two_power(k-i-1) * z[i]
+        acc_m += (i+1) * z[i]
+        #print_ln("m%s: %s", i, acc_m.reveal())
+        acc_w += two_power(i/2) * z[i]
+
+    part_reciprocal = x * acc_v
+
+    return part_reciprocal, acc_v, acc_m, acc_w
+
+def LinAppSQ(b, k, f, kappa=None):
+    alpha = cint(int(-0.8099868542 * 2**k))
+    beta = cint(int(1.787727479 * 2**(2*k)))
+    c, v, m_0, W = NormSQ(b, k, f)
+    w = alpha * c + beta
+    m = sint()
+    comparison.Mod2(m, m_0, int(ceil(log(k))), kappa, False)
+    w = w * v * W
+    w = TruncPr(w, 3*k, 3*k - 2*f, kappa)
+    w = shift_two(w, f/2)
+    w = (1-m) * w * (2**f) + m * int(math.sqrt(2)* 2**f) * w
+    w = TruncPr(w, 2*k, f)
+    return w
+
+def sfix_sqrt(x, k, f, kappa):
+    """ 
+        Compute reciprocal square root of sfix(x) with Goldschmidt's algorithm 
+        and one round of Newton-Raphson.
+    """
+    theta = int(ceil(log(k/5.4))) # Number of rounds
+    
+    y0 = LinAppSQ(x, k, f, kappa)
+    g = TruncPr(y0 * x, k, f, kappa)
+    h = shift_two(y0, 1)
+    gh = TruncPr(g * h, k, f, kappa)
+    for i in range(theta):
+        r = int(1.5*2**f) - gh
+        g = TruncPr(g*r, 2*k, f, kappa)
+        h = TruncPr(h*r, 2*k, f, kappa)
+        gh = TruncPr(g * h, 2*k, f, kappa)
+    r = r = int(1.5*2**f) - gh
+    h = TruncPr(h * (1+r), k, f, kappa)
+    h = 2 * h # approx. 1/sqrt (x)
+    # End of Goldschmidt
+    H = int(3 * 2**(3*f)) - h * h * x
+    H = TruncPr(H , 3*k, 2*f, kappa)
+    g = H * h * x
+    g = shift_two(g, 1)
+    g = TruncPr(g, 3*k, 2*f, kappa)
+    
+    return g
+
+
 def cfix_invsqrt(a, k, f): 
     """ 
         Compute reciprocal square root of cfix(a) based on taylor series 
