@@ -1,0 +1,4 @@
+c = MemValue(cint(0))
+@for_range(10)
+def loop(i):
+    c.write(c + 1)

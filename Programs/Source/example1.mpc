@@ -1,0 +1,22 @@
+from recommender import InputFp
+
+I0 = InputFp(0)
+I1 = InputFp(1)
+I2 = InputFp(2)
+
+I0.append_fp(20)
+I1.append_fp(30)
+I2.append_fp(2)
+
+I0.gen_input_fp()
+I1.gen_input_fp()
+I2.gen_input_fp()
+
+a = sint.get_input_from(0)
+b = sint.get_input_from(1)
+c = sint.get_input_from(2)
+# a = sint(10)
+# b = sint(20)
+# c = sint(-2)
+result = (a+b)*c
+result.reveal()
