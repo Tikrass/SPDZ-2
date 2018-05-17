@@ -1,4 +1,4 @@
-# (C) 2017 University of Bristol. See License.txt
+# (C) 2018 University of Bristol. See License.txt
 
 from Compiler.config import *
 from Compiler.exceptions import *
@@ -45,7 +45,7 @@ class Program(object):
         self.param = param
         self.bit_length = BIT_LENGTHS[param]
         print 'Default bit length:', self.bit_length
-        self.security = STAT_SEC[param]
+        self.security = 40
         print 'Default security parameter:', self.security
         self.galois_length = int(options.galois)
         print 'Galois length:', self.galois_length
