@@ -56,7 +56,7 @@ class dataset:
             self.m = self.m_max
         
         R = lil_matrix((self.n, self.m))
-        Rb = lil_matrix((self.n, self.m))
+        Rb = lil_matrix((self.n, self.m), dtype=int)
                                        
         with open(self.ratings_file_path, 'r') as ratings_file:
             reader = csv.reader(ratings_file, delimiter=self.delimiter, quotechar=self.quotechar)

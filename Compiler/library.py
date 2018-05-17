@@ -1412,16 +1412,16 @@ def cfix_invsqrt(a, k, f):
         estimation and Goldschmidt's algorithm.
     """
     
-    rounds = f/2 # Maybe find better parameter
+    rounds = 10 # Maybe find better parameter
     three = cfix(3).v
     B = Array(rounds, cint)
     Y = Array(rounds, cint)
     y = Array(rounds, cint)
     # Taylor series estimation
     # 1 - 1/2(x-1) + 3/8(x-1)^2
-    t0 = cfix(1/sqrt(2)).v
-    t1 = cfix(1/4*sqrt(2)).v
-    t2 = cfix(3/32*sqrt(2)).v
+    t0 = cfix(1/math.sqrt(2)).v
+    t1 = cfix(1/4*math.sqrt(2)).v
+    t2 = cfix(3/32*math.sqrt(2)).v
     a_shift = a - cfix(2).v
     B[0] = a
     Y[0] = t0 - shift_two(t1 * a_shift,f)  + shift_two(t2 * shift_two(a_shift * a_shift,f),f)
@@ -1430,23 +1430,23 @@ def cfix_invsqrt(a, k, f):
         B[i] = shift_two(B[i-1] * shift_two(Y[i-1] * Y[i-1],f),f)
         Y[i] = shift_two(three - B[i], 1)
         y[i] = shift_two(y[i-1] * Y[i],f)
-        print_ln("B[i]: %s, Y[i]: %s", B[i], Y[i])
+        #print_ln("B[i]: %s, Y[i]: %s", B[i], Y[i])
         
     return y[rounds - 1]
 
-def cfix_sqrt(x):
+@method_block
+def cfix_sqrt(a, k, f):
     """ 
         Compute sqrt(x).
         type(x) = cfix
     """
+    
     # sqrt(x) = 2^-n * sqrt( 4^n *x )
-    a = x.v
-    k = x.k
-    f = x.f
     one = cfix(1.0).v
     four = cfix(4.0).v
     n = MemValue(cint(0))
     aa = MemValue(cint(a))
+    #print_ln("a: %s (%s) n: %s", aa, cfix(aa), n)
     if_then((aa < one) + (aa >= four))
     @do_while
     def _():
@@ -1459,13 +1459,25 @@ def cfix_sqrt(x):
         n.write(n-1)
         aa.write(aa >> 2)
         end_if()
-        print_ln("aa: %s, n: %s", cfix(aa), n)
-        return (aa < one) + (aa >= four)
+        #print_ln("aa: %s, n: %s", cfix(aa), n)
+        return ((aa < one) + (aa >= four))*(aa!=0)
     end_if()
+    #print_ln("aa: %s (%s) n: %s", aa, cfix(aa), n)
+    sqrt_a = MemValue(cint(0))
+    if_then(aa != 0)
     # Compute inverse sqare root
-    invsqrt_aa = cfix_invsqrt(aa, k, f)
+    invsqrt_aa = cfix_invsqrt(aa.read(), k, f)
     # Square root of aa
-    sqrt_aa = shift_two(invsqrt_aa * aa, f) 
+    sqrt_aa = cint(shift_two(invsqrt_aa * aa.read(), f))
+    #print_ln("sqrt_aa: %s (%s)", sqrt_aa, cfix(cint(sqrt_aa)))
     # Shift back 
-    sqrt_x = cfix(sqrt_aa) * cfix(2**(f-n)) 
-    return sqrt_x
+    if_then(n >= 0)
+    sqrt_a.write(sqrt_aa >> n)
+    else_then()
+    sqrt_a.write(sqrt_aa << (0-n))
+    end_if()
+    else_then()
+    sqrt_a.write(cfix(0).v)
+    end_if()
+    #print_ln("sqrt_a: %s (%s)", sqrt_a, cfix(cint(sqrt_a)))
+    return cint(sqrt_a)

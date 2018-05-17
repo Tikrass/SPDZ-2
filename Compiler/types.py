@@ -1772,7 +1772,7 @@ class cfix(_number):
      
     @vectorize   
     def sqrt(self):
-        return library.cfix_sqrt(self.v, self.k, self.f)
+        return cfix(library.cfix_sqrt(self.v, self.k, self.f))
 
 class sfix(_number):
     """ Shared fixed point type. """
@@ -2497,6 +2497,44 @@ class sfixMatrix(Matrix):
 
     def __getitem__(self, index):
         return sfixArray(self.columns, self.multi_array[index].address)
+
+    def get_address(self):
+        return self.multi_array.get_address()
+    
+    
+class cfixArray(Array):
+    def __init__(self, length, address=None):
+        self.array = Array(length, cint, address)
+        self.length = length
+        self.value_type = cfix
+        
+    def delete(self):
+        self.array.delete()
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            return Array.__getitem__(self, index)
+        return cfix(*self.array[index])
+
+    def __setitem__(self, index, value):
+        if isinstance(index, slice):
+            return Array.__setitem__(self, index, value)
+        self.array[index] = value.v
+
+    def get_address(self, index):
+        return self.array.get_address(index)
+
+class cfixMatrix(Matrix):
+    def __init__(self, rows, columns, address=None):
+        self.rows = rows
+        self.columns = columns
+        self.multi_array = Matrix(rows, columns, cint, address)
+    
+    def delete(self):
+        self.multi_array.delete()
+
+    def __getitem__(self, index):
+        return cfixArray(self.columns, self.multi_array[index].address)
 
     def get_address(self):
         return self.multi_array.get_address()

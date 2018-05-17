@@ -1,6 +1,7 @@
 from Compiler.types import *
 from Compiler.library import *
 from Compiler.sparse_types import *
+from config_mine import *
         
 class UserBasedModel(object):
     def __init__(self, n, m, ratings, bitratings):
@@ -131,13 +132,6 @@ class UBCosineCF(UserBasedModel):
         
         cos = dot/(sumu.read() * sumv.read()).sqrt() 
         
-        res = dot.read()
-        #dot.delete()
-        return res
-    
-    @classmethod
-    def _cosine_sim(cls, a, norma, b, normb):
-        dot = cls._dot_product(a,b)
         if DEBUG >= INTERMEDIATE:
             print_ln("dot: %s", dot.reveal())
             print_ln("sumu: %s, sumv: %s", sumu.reveal(), sumv.reveal())

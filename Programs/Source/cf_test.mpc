@@ -1,7 +1,8 @@
-from collaborative_filter import SparseUBCosineCF, UBCosineCF
+from collaborative_filter import SparseUBCosineCF, UBCosineCF, IBCosineCF
 from recommender import *
 import sys
 from config_mine import *
+from math import sqrt
 
 # Program parameters
 sys.setrecursionlimit(100000)
@@ -12,13 +13,13 @@ sfix.set_precision(14, 28)
 cfix.set_precision(14, 28)
 
 # Verbosity
-DEBUG = VERBOSE_PROGRESS
+DEBUG = 2
 
 
 # IO Interface
 IO = InputFp(0)
 
-class Test:
+class Test():
     def __init__(self):
         self.n = 0
         self.m = 0
@@ -77,6 +78,7 @@ class Test:
         CF = UBCosineCF(n,m)
             
         print_ln("############################\nNEW TEST RUN")
+        print_ln("User-based CF")
         print_ln("n = %s\nm = %s", n, m)
         print_ln("")
             
@@ -97,8 +99,6 @@ class Test:
         for u in range(n):
             sys.stdout.write(str(u)+'\r')
             IO.append_fp_array(B[u])
-            
-                
     
         
         
@@ -111,17 +111,19 @@ class Test:
         if DEBUG >= VERBOSE:
             print_ln("Loading private input.")
         @for_range(n)
-        def user_loop1(u):
-            CF.load_ratings_from(u, 0)
+        def user_loop1(i):
+            CF.load_ratings_from(i, 0)
             
         @for_range(n)
-        def user_loop2(u):
-            CF.load_ratings2_from(u, 0)
-            
+        def user_loop2(i):
+            CF.load_ratings2_from(i, 0)
+
         @for_range(n)
-        def user_loop3(u):
-            CF.load_bitratings_from(u, 0)
+        def user_loop3(i):
+            CF.load_bitratings_from(i, 0)
         stop_timer(id+1)
+        
+        
         
         #########################
         # Building Model
@@ -142,15 +144,14 @@ class Test:
         #########################
         start_timer(id+3)
         if DEBUG >= VERBOSE_VALUES:
-            print_ln("Prediction:")
-        for u in range(n):
+            print_ln("Prediction ALL:")
+        @for_range(n)
+        def user_loop(i):
             @for_range(m)
-            def item_loop(i):
+            def item_loop(j):
                 if DEBUG == VERBOSE_PROGRESS:
                     print_str("\ruser %s item %s       ", i, j)
-                prediction = CF.predict_rating(u,i).reveal()
-                if self.mean:
-                    prediction = self.mean[u] + prediction
+                prediction = CF.predict_rating(i,j).reveal()
                 if DEBUG>=VERBOSE_VALUES:
                     print_str('%s ', prediction)
                     
@@ -204,7 +205,7 @@ class Test:
         #########################
         
         
-        start_timer(1)
+        start_timer(id+1)
         if DEBUG >= VERBOSE:
             print_ln("Loading private input.")
         @for_range(n)
@@ -225,9 +226,9 @@ class Test:
         #########################
         # Building Model
         #########################
-        start_timer(2)
+        start_timer(id+2)
         CF.build_model()
-        stop_timer(2)
+        stop_timer(id+2)
         
         #########################
         # Output Model
@@ -239,7 +240,7 @@ class Test:
         #########################
         # Prediction
         #########################
-        start_timer(3)
+        start_timer(id+3)
         if DEBUG >= VERBOSE_VALUES:
             print_ln("Prediction :")
         for u in range(n):
@@ -259,17 +260,15 @@ class Test:
             print_str("\r")
         stop_timer(id+3)
         
-
         #########################
         # Clean up memory
         #########################
         CF.delete()
-
     
     
 
-T = Test().eval_data(50, m=5000).mean_centered()
-T.testUBplain(10)
+# T = Test().eval_data(50, m=5000).mean_centered()
+# T.testIB(10)
 # T = Test().eval_data(100, m=5000).mean_centered()
 # T.testUBplain(20)
 # T = Test().eval_data(150, m=5000).mean_centered()
@@ -290,12 +289,12 @@ T.testUBplain(10)
 # T = Test().eval_data(250, m=8000).mean_centered()
 # T.testIB(100)
 
-# T = Test().small_data().mean_centered()
-# T.testUBplain(10)
-# T = Test().small_data().mean_centered()
-# T.testIB(20)
-#T.test(False, True)
+T = Test().small_data().mean_centered()
+T.testUBplain(10)
+T = Test().small_data().mean_centered()
+T.testIB(20)
 
 # Write private input to file
 IO.gen_input_fp()
+
         
