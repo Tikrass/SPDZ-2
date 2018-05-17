@@ -1937,6 +1937,10 @@ class sfix(_number):
             return sfix(library.sint_cint_division(self.v, other.v, self.k, self.f, self.kappa))
         else:
             raise TypeError('Incompatible fixed point types in division')
+        
+    @vectorize   
+    def sqrt(self):
+        return sfix(library.sfix_sqrt(self.v, self.k, self.f, self.kappa))
 
     @vectorize
     def compute_reciprocal(self):
@@ -2676,6 +2680,22 @@ class MemFix(_mem):
         else:
             return cfix(val)
 
+class cMemFix(_mem):
+    def __init__(self, *args):
+        value = cfix(*args)
+        self.v = MemValue(value.v)
+        
+    def delete(self):
+        self.v.delete()
+
+    def write(self, *args):
+        value = cfix(*args)
+        self.v.write(value.v)
+
+    def read(self):
+        val = self.v.read()
+        return cfix(val)
+
 def getNamedTupleType(*names):
     class NamedTuple(object):
         class NamedTupleArray(object):
@@ -2718,8 +2738,11 @@ sfloat.MemValue = MemFloat
 
 sfix.Array = sfixArray
 sfix.Matrix = sfixMatrix
-
 sfix.MemValue = MemFix
+
+cfix.Array = cfixArray
+cfix.Matrix = cfixMatrix
+cfix.MemValue = cMemFix
 
 cint.MemValue = MemValue
 sint.MemValue = MemValue

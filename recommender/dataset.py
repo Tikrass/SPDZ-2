@@ -55,20 +55,22 @@ class dataset:
         else:
             self.m = self.m_max
         
-        M = lil_matrix((self.n, self.m))
+        R = lil_matrix((self.n, self.m))
+        Rb = lil_matrix((self.n, self.m))
                                        
         with open(self.ratings_file_path, 'r') as ratings_file:
             reader = csv.reader(ratings_file, delimiter=self.delimiter, quotechar=self.quotechar)
             header = next(reader)    
             for rating in reader:
-                uid = int(rating[0])-1
+                u = int(rating[0])-1
                 mid = int(rating[1])
-                iid = self.mid_invdict[mid]
+                i = self.mid_invdict[mid]
                 r = float(rating[2])
                     
-                if uid < self.n and mid < self.m:
-                    M[uid,iid] = r
-        return M
+                if u < self.n and mid < self.m:
+                    R[u,i] = r
+                    Rb[u,i] = 1
+        return R.toarray(), Rb.toarray()
     
 
     
