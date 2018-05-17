@@ -42,18 +42,6 @@ class Test():
         
         return self
     
-    def small_data(self):
-        self.n = 5
-        self.m = 5
-        self.rowcap = 5
-        self.M =[[0.0,1.0,3.0,4.0,0.0],
-                 [0.0,1.0,3.0,4.0,3.0],
-                 [0.0,1.0,3.0,4.0,2.5],
-                 [0.0,1.0,3.0,4.0,3.5],
-                 [0.0,1.0,3.0,4.0,0.0]]
-        
-        return self
-
     def eval_data(self, n=None, m=None): 
         folder = "Prep-Data/ml-latest-small"
         
@@ -79,13 +67,52 @@ class Test():
         
         return self
     
-    def testUBplain(self, id):
+    def prep_private_input(self):
+        #########################
+        # Preparing Private Input
+        #########################
+        print("Preparing rating input.")
+        for u in range(self.n):
+            sys.stdout.write(str(u)+'\r')
+            IO.append_fp_array([int(r* (2**sfix.f)) for r in self.R[u]])
+        
+        print("Preparing rating2 input.")
+        for u in range(self.n):
+            sys.stdout.write(str(u)+'\r')
+            IO.append_fp_array([int((r**2)* (2**sfix.f)) for r in self.R[u]])
+            
+        print("Preparing bitrating input.")
+        for u in range(self.n):
+            sys.stdout.write(str(u)+'\r')
+            IO.append_fp_array(self.B[u])
+    
+    def private_input(self, CF, id):
+        #########################
+        # Reading Private Input
+        #########################
+        
+        start_timer(id+1)
+        if DEBUG >= VERBOSE:
+            print_ln("Loading private input.")
+        @for_range(self.n)
+        def user_loop1(i):
+            CF.load_ratings_from(i, 0)
+            
+        @for_range(self.n)
+        def user_loop2(i):
+            CF.load_ratings2_from(i, 0)
+
+        @for_range(self.n)
+        def user_loop3(i):
+            CF.load_bitratings_from(i, 0)
+        stop_timer(id+1)
+    
+    def testUBplain(self, id, predict):
         
         n = self.n
         m = self.m
         R = self.R
         B = self.B
-        
         CF = UBCosineCF(n,m)
             
         print_ln("############################\nNEW TEST RUN")
@@ -93,46 +120,8 @@ class Test():
         print_ln("n = %s\nm = %s", n, m)
         print_ln("")
             
-        #########################
-        # Preparing Private Input
-        #########################
-        print("Preparing rating input.")
-        for u in range(n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array([int(r* (2**sfix.f)) for r in R[u]])
-        
-        print("Preparing rating2 input.")
-        for u in range(n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array([int((r**2)* (2**sfix.f)) for r in R[u]])
-            
-        print("Preparing bitrating input.")
-        for u in range(n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array(B[u])
-    
-        
-        
-        #########################
-        # Reading Private Input
-        #########################
-        
-        
-        start_timer(id+1)
-        if DEBUG >= VERBOSE:
-            print_ln("Loading private input.")
-        @for_range(n)
-        def user_loop1(i):
-            CF.load_ratings_from(i, 0)
-            
-        @for_range(n)
-        def user_loop2(i):
-            CF.load_ratings2_from(i, 0)
-
-        @for_range(n)
-        def user_loop3(i):
-            CF.load_bitratings_from(i, 0)
-        stop_timer(id+1)
+        self.prep_private_input()
+        self.private_input(CF, id)
         
         
         #########################
@@ -152,31 +141,32 @@ class Test():
         #########################
         # Prediction
         #########################
-        start_timer(id+3)
-        if DEBUG >= VERBOSE_VALUES:
-            print_ln("Prediction ALL:")
-        @for_range(n)
-        def user_loop(i):
-            @for_range(m)
-            def item_loop(j):
-                if DEBUG == VERBOSE_PROGRESS:
-                    print_str("\ruser %s item %s       ", i, j)
-                prediction = CF.predict_rating(i,j).reveal()
+        if (predict):
+            start_timer(id+3)
+            if DEBUG >= VERBOSE_VALUES:
+                print_ln("Prediction ALL:")
+            @for_range(n)
+            def user_loop(i):
+                @for_range(m)
+                def item_loop(j):
+                    if DEBUG == VERBOSE_PROGRESS:
+                        print_str("\ruser %s item %s       ", i, j)
+                    prediction = CF.predict_rating(i,j).reveal()
+                    if DEBUG>=VERBOSE_VALUES:
+                        print_str('%s ', prediction)
+                        
                 if DEBUG>=VERBOSE_VALUES:
-                    print_str('%s ', prediction)
-                    
-            if DEBUG>=VERBOSE_VALUES:
-                print_ln(' ')
-        if DEBUG == VERBOSE_PROGRESS:
-            print_str("\r")
-        stop_timer(id+3)
+                    print_ln(' ')
+            if DEBUG == VERBOSE_PROGRESS:
+                print_str("\r")
+            stop_timer(id+3)
         
         #########################
         # Clean up memory
         #########################
         CF.delete()
 
-    def testIB(self, id):
+    def testIB(self, id, predict):
         n = self.n
         m = self.m
         R = self.R
@@ -189,47 +179,8 @@ class Test():
         print_ln("n = %s\nm = %s", n, m)
         print_ln("")
             
-        #########################
-        # Preparing Private Input
-        #########################
-        print("Preparing rating input.")
-        for u in range(n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array([int(r* (2**sfix.f)) for r in R[u]])
-            
-        print("Preparing rating2 input.")
-        for u in range(n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array([int((r**2) *  (2**sfix.f)) for r in R[u]])
-            
-        print("Preparing bitrating input.")
-        for u in range(n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array(B[u])
-                
-    
-        
-        
-        #########################
-        # Reading Private Input
-        #########################
-        
-        
-        start_timer(id+1)
-        if DEBUG >= VERBOSE:
-            print_ln("Loading private input.")
-        @for_range(n)
-        def user_loop1(u):
-            CF.load_ratings_from(u, 0)
-            
-        @for_range(n)
-        def user_loop2(u):
-            CF.load_ratings2_from(u, 0)
-            
-        @for_range(n)
-        def user_loop3(u):
-            CF.load_bitratings_from(u, 0)
-        stop_timer(id+1)
+        self.prep_private_input()
+        self.private_input(CF,id)
             
 
         
@@ -250,25 +201,26 @@ class Test():
         #########################
         # Prediction
         #########################
-        start_timer(id+3)
-        if DEBUG >= VERBOSE_VALUES:
-            print_ln("Prediction :")
-        for u in range(n):
-            @for_range(m)
-            def item_loop(i):
-                if DEBUG == VERBOSE_PROGRESS:
-                    print_str("\ruser %s item %s       ", u, i)
-                prediction = CF.predict_rating(u,i)
-                if self.mean:
-                    prediction = self.mean[u] + prediction
+        if (predict):
+            start_timer(id+3)
+            if DEBUG >= VERBOSE_VALUES:
+                print_ln("Prediction :")
+            for u in range(n):
+                @for_range(m)
+                def item_loop(i):
+                    if DEBUG == VERBOSE_PROGRESS:
+                        print_str("\ruser %s item %s       ", u, i)
+                    prediction = CF.predict_rating(u,i)
+                    if self.mean:
+                        prediction = self.mean[u] + prediction
+                    if DEBUG>=VERBOSE_VALUES:
+                        print_str('%s ', prediction)
+                        
                 if DEBUG>=VERBOSE_VALUES:
-                    print_str('%s ', prediction)
-                    
-            if DEBUG>=VERBOSE_VALUES:
-                print_ln(' ')
-        if DEBUG == VERBOSE_PROGRESS:
-            print_str("\r")
-        stop_timer(id+3)
+                    print_ln(' ')
+            if DEBUG == VERBOSE_PROGRESS:
+                print_str("\r")
+            stop_timer(id+3)
         
         #########################
         # Clean up memory
@@ -277,32 +229,32 @@ class Test():
     
     
 
-# T = Test().eval_data(50, m=5000).mean_centered()
-# T.testIB(10)
-# T = Test().eval_data(100, m=5000).mean_centered()
-# T.testUBplain(20)
-# T = Test().eval_data(150, m=5000).mean_centered()
-# T.testUBplain(30)
-# T = Test().eval_data(200, m=5000).mean_centered() 
-# T.testUBplain(40)
-# T = Test().eval_data(250, m=5000).mean_centered()
-# T.testUBplain(50)
+T = Test().eval_data(50, m=5000).mean_centered()
+T.testUBplain(10, False)
+T = Test().eval_data(100, m=5000).mean_centered()
+T.testUBplain(20, False)
+T = Test().eval_data(150, m=5000).mean_centered()
+T.testUBplain(30, False)
+T = Test().eval_data(200, m=5000).mean_centered() 
+T.testUBplain(40, False)
+T = Test().eval_data(250, m=5000).mean_centered()
+T.testUBplain(50, False)
 
-# T = Test().eval_data(150, m=4000).mean_centered()
-# T.testIB(60)
-# T = Test().eval_data(100, m=5000).mean_centered()
-# T.testIB(70)
-# T = Test().eval_data(150, m=6000).mean_centered()
-# T.testIB(80)
-# T = Test().eval_data(200, m=7000).mean_centered() 
-# T.testIB(90)
-# T = Test().eval_data(250, m=8000).mean_centered()
-# T.testIB(100)
+T = Test().eval_data(150, m=4000).mean_centered()
+T.testIB(60, False)
+T = Test().eval_data(100, m=5000).mean_centered()
+T.testIB(70, False)
+T = Test().eval_data(150, m=6000).mean_centered()
+T.testIB(80, False)
+T = Test().eval_data(200, m=7000).mean_centered() 
+T.testIB(90, False)
+T = Test().eval_data(250, m=8000).mean_centered()
+T.testIB(100, False)
 
-T = Test().small_data().mean_centered()
-T.testUBplain(10)
-T = Test().small_data().mean_centered()
-T.testIB(20)
+# T = Test().small_data().mean_centered()
+# T.testUBplain(10)
+# T = Test().small_data().mean_centered()
+# T.testIB(20)
 
 # Write private input to file
 IO.gen_input_fp()
