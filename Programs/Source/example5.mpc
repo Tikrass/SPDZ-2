@@ -1,0 +1,3 @@
+a = cfix(0)
+print(a.v)
+

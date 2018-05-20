@@ -26,18 +26,4 @@ class InputFp:
             self.append_fp(*values)
         else:
             self.append_fp_sparse_array(values, capacity)
-            
-    def append_fp_sparse_array(self, values, capacity):
-        input=[]
-        tailpointer = 0
-        for k in range(len(values)):
-            if values[k] != 0:
-                input += [k,values[k]]
-                tailpointer += 1;
-        if tailpointer > capacity:
-            raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
-        for _ in range(tailpointer, capacity):
-            input += [-1,0]
-        input += [tailpointer]
-        self.input_fp +=  input
     

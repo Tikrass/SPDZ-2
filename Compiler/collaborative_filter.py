@@ -148,10 +148,11 @@ class UBCosineCF(UserBasedModel):
 
 class SparseUBCosineCF(UBCosineCF):
     def __init__(self, n, m, capacity):
-        UserBasedModel.__init__(self, n, m, sfixSparseRowMatrix(n, m))
+        self.capacity = capacity
+        UserBasedModel.__init__(self, n, m, sfixSparseRowMatrix(n, m), None)
         
-    def _load_ratings_from(self, player, ratings):
-        sfixSparseArray.get_raw_input_from(player, self.nitems, self.capacity, address=ratings.address)
+    def load_ratings_from(self, user, player):
+        sfixSparseArray.get_raw_input_from(player, self.n, self.capacity, address=self.R[u].address)
         
     @method_block
     def cosine_sim(self,a_ptr, norma, b_ptr, normb):

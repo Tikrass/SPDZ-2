@@ -1,0 +1,20 @@
+a = MemValue(cint(0))
+if_then(cint(0))
+a.write(123)
+else_then()
+a.write(789)
+end_if()
+
+a = cint(0)
+condition = sint(0)
+case1 = cint(123)
+case0 = cint(789)
+a = condition * case1 + (1 - condition) * case0
+
+A = Array(20, sint)
+k = sint(3)
+b = sint(123)
+for i in range(A.length):
+    condition = (k == i)
+    A[i] =  condition * b + (1 - condition) * A[i]
+    

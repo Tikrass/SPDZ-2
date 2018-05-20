@@ -1,0 +1,9 @@
+c = cint(0)
+for i in range(3):
+    c += 1
+    
+c = cint(0)
+c += 1
+c += 1
+c += 1
+

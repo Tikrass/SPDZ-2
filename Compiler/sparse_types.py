@@ -18,10 +18,10 @@ class sintSparseRatingArray(Array):
         self.array.delete()
     
     def _getkey(self, index):
-        return self.array[3*index]-1
+        return self.array[3*index]
     
     def _setkey(self, index, key):
-        self.array[2*index] = key+1
+        self.array[2*index] = key
     
     def _getr(self, index):
         return self.array[3*index+1]
@@ -35,7 +35,7 @@ class sintSparseRatingArray(Array):
     def _getr2(self, index):
         return self.array[3*index+2]
                           
-    def get_ratings(self, key):        
+    def get_pair(self, key):        
         accu1 = MemValue(sint(0))
         accu2 = MemValue(sint(0))
         @library.for_range(self.tailpointer)
@@ -58,14 +58,12 @@ class sintSparseRatingArray(Array):
             accu1.write(match.if_else(r1, accu1.read()))
         return accu1.read()
     
-    def __setitem__(self, key, value):   
-        if isinstance(key, slice):
-            return Array.__setitem__(self, key, value)
+    def set_pair(self, key, rating, rating2):   
         if self.readonly:
             raise CompileError("Sparse Array is in readonly mode.")
         self._setkey(self.tailpointer, key)
-        self._setr(self.tailpointer, value[0])
-        self._setr2(self.tailpointer, value[1])
+        self._setr(self.tailpointer, rating)
+        self._setr2(self.tailpointer, rating2)
         self.tailpointer += 1
     
     def writable(self, tailpointer=0):
@@ -102,11 +100,11 @@ class SparseRowMatrix(Matrix):
     def __getitem__(self, index):
         return SparseArray(self.columns,self.rowcap, self.value_type, self.matrix[index].address)
     
-class sfixSparseArray(Array):
+class sfixSparseRatingArray(Array):
     def __init__(self, length, capacity, address=None):
         self.length = length
         self.capacity = capacity
-        self.array = SparseArray(length, capacity, sint, address)
+        self.array = sintSparseRatingArray(length, capacity, sint, address)
         self.value_type = sfix
         self.address = self.array.address
         
@@ -122,17 +120,15 @@ class sfixSparseArray(Array):
     _setr2 = lambda self, index, val: self.array._setr2(index,val.v)
     writable =  lambda self, *args : self.array.writable(*args)
     
-    def __getitem__(self, index):
-        if isinstance(index, slice):
-            return Array.__getitem__(self, index)
-        r1, r2 = self.array[index]
-        
-        return sfix(*r1), sfix(*r2)
-
-    def __setitem__(self, index, value):
-        if isinstance(index, slice):
-            return Array.__setitem__(self, index, value)
-        self.array[index] = (value[0].v, value[1].v)
+    def get_pair(self, key):    
+        r1, r2 = self.array.get_pair(key)    
+        return sfix(r1), sfix(r2)
+    
+    def get_rating(self, key):
+        return self.array.get_rating(key)
+    
+    def set_pair(self, key, rating, rating2):   
+        self.array.set_pair(key, rating.v, rating2.v)
     
     @classmethod
     def get_raw_input_from(cls, player, length, capacity, address=None):

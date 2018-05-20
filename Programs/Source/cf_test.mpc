@@ -13,7 +13,7 @@ sfix.set_precision(14, 28)
 cfix.set_precision(14, 28)
 
 # Verbosity
-DEBUG = 2
+DEBUG = 3
 
 # IO Interface
 IO = InputFp(0)
@@ -227,6 +227,101 @@ class Test():
         #########################
         CF.delete()
     
+    def testUBsparse(self, id):
+        
+        n = self.n
+        m = self.m
+        R = self.R
+        B = self.B
+        cap = self.rowcap
+        
+        CF = SparseUBCosineCF(n,m)
+            
+        print_ln("############################\nNEW TEST RUN")
+        print_ln("Sparse User-based CF")
+        print_ln("n = %s\nm = %s, cap = %s", n, m, cap)
+        print_ln("")
+            
+        #########################
+        # Preparing Private Input
+        #########################
+        
+        def append_fp_sparse_array(ratings,bitratings, capacity):
+            input=[]
+            tailpointer = 0
+            for k in range(len(values)):
+                if bitratings[k] != 0:
+                    input += [k,ratings[k]*(2**sfix.f), (ratings[k]**2)* (2**sfix.f)]
+                    tailpointer += 1;
+            if tailpointer > capacity:
+                raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
+            for _ in range(tailpointer, capacity):
+                input += [0,0,0]
+            input += [tailpointer]
+            self.input_fp +=  input
+            
+        print("Preparing sparse rating input.")
+        for u in range(n):
+            sys.stdout.write(str(u)+'\r')
+            append_fp_sparse_array(R[u], B[u], cap)
+        
+    
+        
+        
+        #########################
+        # Reading Private Input
+        #########################
+        
+        
+        start_timer(id+1)
+        if DEBUG >= VERBOSE:
+            print_ln("Loading private input.")
+        @for_range(n)
+        def user_loop1(i):
+            CF.load_ratings_from(i, 0)
+        stop_timer(id+1)
+        
+        
+        #########################
+        # Building Model
+        #########################
+        start_timer(id+2)
+        CF.build_model()
+        stop_timer(id+2)
+        
+        #########################
+        # Output Model
+        #########################
+        if DEBUG >= VERBOSE_VALUES:
+            print_ln("Model:")
+            CF.print_model()
+            
+        #########################
+        # Prediction
+        #########################
+        start_timer(id+3)
+        if DEBUG >= VERBOSE_VALUES:
+            print_ln("Prediction ALL:")
+        @for_range(n)
+        def user_loop(i):
+            @for_range(m)
+            def item_loop(j):
+                if DEBUG == VERBOSE_PROGRESS:
+                    print_str("\ruser %s item %s       ", i, j)
+                prediction = CF.predict_rating(i,j).reveal()
+                if DEBUG>=VERBOSE_VALUES:
+                    print_str('%s ', prediction)
+                    
+            if DEBUG>=VERBOSE_VALUES:
+                print_ln(' ')
+        if DEBUG == VERBOSE_PROGRESS:
+            print_str("\r")
+        stop_timer(id+3)
+        
+        #########################
+        # Clean up memory
+        #########################
+        CF.delete()
     
 
 # T = Test().eval_data(50, m=5000).mean_centered()
