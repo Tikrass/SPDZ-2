@@ -82,7 +82,7 @@ class UserBasedModel(object):
         return self.range_prediction(v, i, epsilon.read())
         
 
-    predict_rating = lambda self, v,i : self.peer_prediction(v, i, 2)
+    predict_rating = lambda self, v,i,k : self.peer_prediction(v, i, k)
         
     
     def delete(self):

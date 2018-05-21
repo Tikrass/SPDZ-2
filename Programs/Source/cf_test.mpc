@@ -2,7 +2,8 @@ from collaborative_filter import SparseUBCosineCF, UBCosineCF, IBCosineCF
 from recommender import *
 import sys
 from config_mine import *
-from math import sqrt
+from math import sqrt, floor, ceil
+import random
 
 # Program parameters
 sys.setrecursionlimit(100000)
@@ -13,10 +14,14 @@ sfix.set_precision(14, 28)
 cfix.set_precision(14, 28)
 
 # Verbosity
-DEBUG = 3
+DEBUG = 2
 
 # IO Interface
 IO = InputFp(0)
+
+K = 10
+
+NPREDICTIONS = 500
 
 class Test():
     def __init__(self):
@@ -144,21 +149,40 @@ class Test():
         if (predict):
             start_timer(id+3)
             if DEBUG >= VERBOSE_VALUES:
-                print_ln("Prediction ALL:")
-            @for_range(n)
-            def user_loop(i):
-                @for_range(m)
-                def item_loop(j):
+                print_ln("Prediction (MAE, RMSE):")
+            
+            mae = cfix(0)
+            rmse = cfix(0)
+            predictions = 0
+            pperuser = int(floor(NPREDICTIONS/n))
+            additionals = NPREDICTIONS - pperuser * n
+            for u in range(n):
+                Iu = [i for i in range(m) if B[u][i]==1]
+                if u <= additionals:
+                    sampsize = pperuser + 1
+                else:
+                    sampsize = pperuser
+                sampling = random.sample(Iu, sampsize)
+                for i in sampling:
                     if DEBUG == VERBOSE_PROGRESS:
-                        print_str("\ruser %s item %s       ", i, j)
-                    prediction = CF.predict_rating(i,j).reveal()
+                        print_str("\ruser %s item %s       ", u, i)
+                    prediction = CF.predict_rating(u,i, K).reveal()
+                    if self.mean:
+                        prediction = self.mean[u] + prediction
+                    error = prediction - R[u][i]
+                    cint(error>=0) * (error + error) - error
+                    mae += error
+                    rmse += (error)**2
                     if DEBUG>=VERBOSE_VALUES:
                         print_str('%s ', prediction)
-                        
                 if DEBUG>=VERBOSE_VALUES:
                     print_ln(' ')
             if DEBUG == VERBOSE_PROGRESS:
                 print_str("\r")
+            
+            mae = mae / NPREDICTIONS
+            rmse = (rmse / NPREDICTIONS).sqrt()
+            print_ln("MAE: %s\nRMSE: %s", mae, rmse)
             stop_timer(id+3)
         
         #########################
@@ -210,7 +234,7 @@ class Test():
                 def item_loop(i):
                     if DEBUG == VERBOSE_PROGRESS:
                         print_str("\ruser %s item %s       ", u, i)
-                    prediction = CF.predict_rating(u,i)
+                    prediction = CF.predict_rating(u,i, K)
                     if self.mean:
                         prediction = self.mean[u] + prediction
                     if DEBUG>=VERBOSE_VALUES:
@@ -324,30 +348,30 @@ class Test():
         CF.delete()
     
 
-# T = Test().eval_data(50, m=5000).mean_centered()
-# T.testUBplain(10, False)
-# T = Test().eval_data(100, m=5000).mean_centered()
-# T.testUBplain(20, False)
-# T = Test().eval_data(150, m=5000).mean_centered()
-# T.testUBplain(30, False)
-# T = Test().eval_data(200, m=5000).mean_centered() 
-# T.testUBplain(40, False)
-# T = Test().eval_data(250, m=5000).mean_centered()
-# T.testUBplain(50, False)
+T = Test().eval_data(100).mean_centered()
+T.testUBplain(10, True)
+T = Test().eval_data(200).mean_centered()
+T.testUBplain(20, True)
+T = Test().eval_data(300).mean_centered()
+T.testUBplain(30, True)
+T = Test().eval_data(400).mean_centered() 
+T.testUBplain(40, True)
+T = Test().eval_data(500).mean_centered()
+T.testUBplain(50, True)
 
-T = Test().eval_data(100, m=2000).mean_centered()
-T.testIB(60, False)
-T = Test().eval_data(100, m=3000).mean_centered()
-T.testIB(70, False)
-T = Test().eval_data(100, m=4000).mean_centered()
-T.testIB(80, False)
-T = Test().eval_data(100, m=5000).mean_centered() 
-T.testIB(90, False)
-T = Test().eval_data(100, m=6000).mean_centered()
-T.testIB(100, False)
+# T = Test().eval_data(100, m=2000).mean_centered()
+# T.testIB(60, False)
+# T = Test().eval_data(100, m=3000).mean_centered()
+# T.testIB(70, False)
+# T = Test().eval_data(100, m=4000).mean_centered()
+# T.testIB(80, False)
+# T = Test().eval_data(100, m=5000).mean_centered() 
+# T.testIB(90, False)
+# T = Test().eval_data(100, m=6000).mean_centered()
+# T.testIB(100, False)
 
 # T = Test().small_data().mean_centered()
-# T.testUBplain(10)
+# T.testUBplain(10, False)
 # T = Test().small_data().mean_centered()
 # T.testIB(20)
 
