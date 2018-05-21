@@ -333,7 +333,7 @@ class Test():
             CF.print_model()
             
         #########################
-        # Prediction
+        # Prediction & mae
         #########################
         start_timer(id+3)
         if DEBUG >= VERBOSE_VALUES:
