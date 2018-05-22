@@ -315,11 +315,60 @@ class IBCosineCF(object):
         
         return rating.read() / norm.read()   
     
-    @method_block
-    def peer_prediction(self, user, item, k):
-        pass
-
-    predict_rating = lambda self, v,i : self.range_prediction(v, i, cfix(0.0))
+    def peer_prediction(self, u, j, k):
+        peers = Array(k, cint) # List of peer candidates
+        start = MemValue(cint(k))
+        @for_range(k)
+        def init_loop(index): # start with first k items without jth item
+            if_then(j == index)
+            peers[index] = k
+            start.write(start+ 1)
+            else_then()
+            peers[index] = index
+            end_if()
+        
+        # find smallest similarity
+        def minimum(peers):
+            min_index = MemValue(cint(0))
+            @for_range(k)
+            def min_loop(index):
+                if_then(self.S[peers[index]][j] < self.S[peers[min_index.read()]][j])
+                min_index.write(cint(index))
+                end_if()
+            return min_index.read()
+        
+        min_index = MemValue(minimum(peers))
+        
+        @for_range(start.read(),self.m)
+        def search_loop(i): 
+            if_then(self.S[i][j] > self.S[peers[min_index.read()]][j])
+            # Replace least similar in the candidates list with more similari item
+            peers[min_index.read()] = i
+            min_index.write(minimum(peers)) # Then find new minimum element
+            end_if()
+        
+        if DEBUG >= INTERMEDIATE:
+            print_ln("Peers:")
+            @for_range(k)
+            def print_loop(index):
+                print_str("%s ", peers[index])
+            print_ln(' ')
+        
+        rating = cfix.MemValue(cfix(0))
+        norm = cfix.MemValue(cfix(0))
+        @for_range(k)
+        def sum_loop(index):    
+            p = peers[index]
+            c = (self.S[p][j] >= 0) * self.B[u][j].reveal()
+            if_then(c)
+            rating.write(rating.read() + self.S[p][j] * self.R[u][p].reveal() )
+            norm.write(norm + self.S[p][j])
+            #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
+            end_if()
+        
+        return rating.read() / norm.read()   
+    
+    predict_rating = lambda self, v,i,k : self.peer_prediction(v, i, k)
         
     
     def delete(self):
