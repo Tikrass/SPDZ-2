@@ -19,9 +19,7 @@ DEBUG = 2
 # IO Interface
 IO = InputFp(0)
 
-K = 10
 
-NPREDICTIONS = 500
 
 class Test():
     def __init__(self):
@@ -45,6 +43,10 @@ class Test():
                    [1,0,1,1,0],
                    [1,1,0,1,1]]
         
+        self.K = 2
+
+        self.NPREDICTIONS = 5
+        
         return self
     
     def eval_data(self, n=None, m=None): 
@@ -55,6 +57,10 @@ class Test():
         self.n = D.n
         self.m = D.m
         self.rowcap = 2400
+        
+        self.K = 10
+
+        self.NPREDICTIONS = 500
         
         return self
     
@@ -119,6 +125,8 @@ class Test():
         R = self.R
         B = self.B
         CF = UBCosineCF(n,m)
+        K = self.K
+        NPREDICTIONS = self.NPREDICTIONS
             
         print_ln("############################\nNEW TEST RUN")
         print_ln("User-based CF")
@@ -168,13 +176,14 @@ class Test():
                         print_str("\ruser %s item %s       ", u, i)
                     prediction = CF.predict_rating(u,i, K).reveal()
                     if self.mean:
-                        prediction = self.mean[u] + prediction
+                        prediction = prediction
                     error = prediction - R[u][i]
-                    cint(error>=0) * (error + error) - error
+                    error = cint(error>=0) * (error + error) - error
                     mae += error
                     rmse += (error)**2
                     if DEBUG>=VERBOSE_VALUES:
-                        print_str('%s ', prediction)
+                        print_ln('u: %s, i: %s, prediction: %s, expected: %s (error: %s) ', u, i,prediction, R[u][i], error)
+                        print_ln("mae: %s, rmse %s", mae, rmse)
                 if DEBUG>=VERBOSE_VALUES:
                     print_ln(' ')
             if DEBUG == VERBOSE_PROGRESS:
@@ -195,6 +204,8 @@ class Test():
         m = self.m
         R = self.R
         B = self.B
+        K = self.K
+        NPREDICTIONS = self.NPREDICTIONS
     
         CF = IBCosineCF(n,m)
             
@@ -228,22 +239,40 @@ class Test():
         if (predict):
             start_timer(id+3)
             if DEBUG >= VERBOSE_VALUES:
-                print_ln("Prediction :")
+                print_ln("Prediction (MAE, RMSE):")
+            
+            mae = cfix(0)
+            rmse = cfix(0)
+            predictions = 0
+            pperuser = int(floor(NPREDICTIONS/n))
+            additionals = NPREDICTIONS - pperuser * n
             for u in range(n):
-                @for_range(m)
-                def item_loop(i):
+                Iu = [i for i in range(m) if B[u][i]==1]
+                if u <= additionals:
+                    sampsize = pperuser + 1
+                else:
+                    sampsize = pperuser
+                sampling = random.sample(Iu, sampsize)
+                for i in sampling:
                     if DEBUG == VERBOSE_PROGRESS:
                         print_str("\ruser %s item %s       ", u, i)
                     prediction = CF.predict_rating(u,i, K)
                     if self.mean:
-                        prediction = self.mean[u] + prediction
+                        prediction = prediction
+                    error = prediction - R[u][i]
+                    error = cint(error>=0) * (error + error) - error # abs
+                    mae += error
+                    rmse += (error)**2
+                    
                     if DEBUG>=VERBOSE_VALUES:
-                        print_str('%s ', prediction)
-                        
-                if DEBUG>=VERBOSE_VALUES:
-                    print_ln(' ')
+                        print_ln('u: %s, i: %s, prediction: %s, expected: %s (error: %s) ', u, i,prediction, R[u][i], error)
+                        print_ln("mae: %s, rmse %s", mae, rmse)
             if DEBUG == VERBOSE_PROGRESS:
                 print_str("\r")
+            
+            mae = mae / NPREDICTIONS
+            rmse = (rmse / NPREDICTIONS).sqrt()
+            print_ln("MAE: %s\nRMSE: %s", mae, rmse)
             stop_timer(id+3)
         
         #########################
@@ -258,6 +287,8 @@ class Test():
         R = self.R
         B = self.B
         cap = self.rowcap
+        K = self.K
+        NPREDICTIONS = self.NPREDICTIONS
         
         CF = SparseUBCosineCF(n,m)
             
@@ -346,34 +377,26 @@ class Test():
         # Clean up memory
         #########################
         CF.delete()
+
+N_PARAMS = [100, 200, 300, 400, 500]
+
+M_PARAMS = [2000, 3000, 4000, 5000, 6000]
+
+PREDICT = True
+for id,n in enumerate(N_PARAMS):
+    T = Test().eval_data(n=n).mean_centered()
+    T.testUBplain(id*10+0, PREDICT)
     
+for id,m in enumerate(M_PARAMS):
+    T = Test().eval_data(n=200,m=m).mean_centered()
+    T.testIB(id*10+100, PREDICT)
 
-T = Test().eval_data(100).mean_centered()
-T.testUBplain(10, True)
-T = Test().eval_data(200).mean_centered()
-T.testUBplain(20, True)
-T = Test().eval_data(300).mean_centered()
-T.testUBplain(30, True)
-T = Test().eval_data(400).mean_centered() 
-T.testUBplain(40, True)
-T = Test().eval_data(500).mean_centered()
-T.testUBplain(50, True)
 
-# T = Test().eval_data(100, m=2000).mean_centered()
-# T.testIB(60, False)
-# T = Test().eval_data(100, m=3000).mean_centered()
-# T.testIB(70, False)
-# T = Test().eval_data(100, m=4000).mean_centered()
-# T.testIB(80, False)
-# T = Test().eval_data(100, m=5000).mean_centered() 
-# T.testIB(90, False)
-# T = Test().eval_data(100, m=6000).mean_centered()
-# T.testIB(100, False)
 
 # T = Test().small_data().mean_centered()
-# T.testUBplain(10, False)
+# T.testUBplain(10, True)
 # T = Test().small_data().mean_centered()
-# T.testIB(20)
+# T.testIB(20, True)
 
 # Write private input to file
 IO.gen_input_fp()
