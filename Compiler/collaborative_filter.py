@@ -59,7 +59,7 @@ class UserBasedModel(object):
         @for_range(self.n)
         def user_loop(u):
             if_then(u != v)
-            c.write(c + self.S[u][v] > epsilon * self.B[u][v])
+            c.write(c + self.S[u][v] > epsilon * self.B[u][i])
             end_if()
         return c.read()
     
