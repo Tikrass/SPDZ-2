@@ -36,7 +36,7 @@ class UserBasedModel(object):
                 print_ln(' ')
     
     @method_block
-    def range_prediction(self, v, i, epsilon):
+    def threshold_prediction(self, v, i, epsilon):
         if DEBUG >= INTERMEDIATE:
             print_ln("Predicting rating:\n user %s, item %s", v, i)
         
@@ -55,31 +55,26 @@ class UserBasedModel(object):
         return r.read() / n.read()   
     
     def count_range(self, v, i, epsilon):
-        c = sint.MemValue(sint(0))
-        @for_range(self.n)
-        def user_loop(u):
-            if_then(u != v)
-            c.write(c + self.S[u][v] > epsilon * self.B[u][i])
-            end_if()
+        
         return c.read()
     
     @method_block
-    def peer_prediction(self, v, i, k):
-        epsilon = cfix.MemValue(cfix(0.5))
-        delta = cfix.MemValue(cfix(0.25))
-        @do_while
-        def search_loop():
-            c = self.count_range(v, i, epsilon.read()).reveal()
-            if_then(c < k)
-            epsilon.write(epsilon.read() - delta.read())
-            end_if()
-            if_then(c > k)
-            epsilon.write(epsilon.read() + delta.read())
-            end_if()
-            delta.write(delta / 2)
+    def nn_prediction(self, v, i, k):
+        epsilon = sfix.MemValue(sfix(sint(2**(sfix.f-1)))) # 0.5
+        
+        @for_range(2,sfix.f)
+        def search_loop(round):
+            c = sint.MemValue(sint(0))
+            @for_range(self.n)
+            def user_loop(u):
+                if_then(u != v)
+                c.write(c + (self.S[u][v] > epsilon) * self.B[u][i])
+                end_if()
+            delta = cfix(cint(2**(sfix.f-(round))))
+            epsilon.write( epsilon.read() + (c > k) * delta)
+            epsilon.write( epsilon.read() - (c < k) * delta)
             #print_ln("e: %s, d: %s, c:%s", epsilon.read(), delta.read(), c)
-            return (c != k and delta != 0)
-        return self.range_prediction(v, i, epsilon.read())
+        return self.threshold_prediction(v, i, epsilon.read())
         
 
     predict_rating = lambda self, v,i,k : self.peer_prediction(v, i, k)

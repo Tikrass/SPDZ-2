@@ -378,15 +378,16 @@ class Test():
         #########################
         CF.delete()
 
-N_PARAMS = [100, 200, 300, 400, 500]
-
-M_PARAMS = [2000, 3000, 4000, 5000, 6000]
-
+# N_PARAMS = [100, 200, 300, 400, 500]
+N_PARAMS = [100]
+# M_PARAMS = [2000, 3000, 4000, 5000, 6000]
+M_PARAMS = [2000]
+  
 PREDICT = True
 for id,n in enumerate(N_PARAMS):
     T = Test().eval_data(n=n).mean_centered()
     T.testUBplain(id*10+0, PREDICT)
-    
+      
 for id,m in enumerate(M_PARAMS):
     T = Test().eval_data(n=200,m=m).mean_centered()
     T.testIB(id*10+100, PREDICT)
