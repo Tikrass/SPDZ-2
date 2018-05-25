@@ -68,7 +68,7 @@ class UserBasedModel(object):
             @for_range(self.n)
             def user_loop(u):
                 if_then(u != v)
-                c.write(c + (self.S[u][v] > epsilon) * self.B[u][i])
+                c.write(c + (self.S[u][v] > epsilon.read()) * self.B[u][i])
                 end_if()
             delta = cfix(cint(2**(sfix.f-(round))))
             epsilon.write( epsilon.read() + (c > k) * delta)
@@ -77,7 +77,7 @@ class UserBasedModel(object):
         return self.threshold_prediction(v, i, epsilon.read())
         
 
-    predict_rating = lambda self, v,i,k : self.peer_prediction(v, i, k)
+    predict_rating = lambda self, v,i,k : self.nn_prediction(v, i, k)
         
     
     def delete(self):
@@ -290,7 +290,7 @@ class IBCosineCF(object):
     
     
     @method_block
-    def range_prediction(self, u, j, epsilon):
+    def threshold_prediction(self, u, j, epsilon):
         if DEBUG >= INTERMEDIATE:
             print_ln("Predicting rating:\n user %s, item %s", u, j)
         
@@ -310,7 +310,7 @@ class IBCosineCF(object):
         
         return rating.read() / norm.read()   
     
-    def peer_prediction(self, u, j, k):
+    def nn_prediction(self, u, j, k):
         peers = Array(k, cint) # List of peer candidates
         start = MemValue(cint(k))
         @for_range(k)
@@ -363,7 +363,7 @@ class IBCosineCF(object):
         
         return rating.read() / norm.read()   
     
-    predict_rating = lambda self, v,i,k : self.peer_prediction(v, i, k)
+    predict_rating = lambda self, v,i,k : self.nn_prediction(v, i, k)
         
     
     def delete(self):
