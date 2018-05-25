@@ -4,7 +4,7 @@ class UBCF(object):
     def __init__(self, n, m, ratings, bitratings):
         self.S = [[0 for _ in range(n)] for _ in range(n)] # Similarity model
         self.n = n # Number of users
-        self.m = n # Number of items
+        self.m = m # Number of items
         self.R = ratings # Rating matrix
         self.B = bitratings # Boolean ratings
     
@@ -40,7 +40,7 @@ class IBCF(object):
     def __init__(self, n, m, ratings, bitratings):
         self.S = [[0 for _ in range(m)] for _ in range(m)] # Similarity model
         self.n = n # Number of users
-        self.m = n # Number of items
+        self.m = m # Number of items
         self.R = ratings # Rating matrix
         self.B = bitratings # Boolean ratings
     
@@ -50,6 +50,7 @@ class IBCF(object):
                 s_ij = self.cosine(i,j)
                 self.S[i][j] = s_ij
                 self.S[j][i] = s_ij
+                print "{} to {}\r".format(i,j),
             
     def print_model(self):
             for i in range(self.m):
