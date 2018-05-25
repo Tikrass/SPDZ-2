@@ -1,6 +1,8 @@
 from recommender import *
 import timeit
-
+import time
+from math import sqrt, floor, ceil
+import random
 
 class Test():
     def __init__(self):
@@ -77,9 +79,40 @@ class Test():
         
         CF = baseline.UBCF(n, m, R, B)
         
+        print "BUILD MODEL"
         tmodel=timeit.timeit(CF.build_model, number=1)
         print "tmodel: {}".format(tmodel)
-        #CF.print_model()
+        
+
+        if (predict):
+            print "PREDICTION"
+            start_time = time.clock()
+            mae = 0
+            rmse = 0
+            predictions = 0
+            pperuser = int(floor(NPREDICTIONS/n))
+            additionals = NPREDICTIONS - pperuser * n
+            for u in range(n):
+                Iu = [i for i in range(m) if B[u][i]==1]
+                if u <= additionals:
+                    sampsize = pperuser + 1
+                else:
+                    sampsize = pperuser
+                sampling = random.sample(Iu, sampsize)
+                for i in sampling:
+                    prediction = CF.nn_prediction(u,i, K)
+                    error = prediction - R[u][i]
+                    #print "u: {}, i: {}, prediction: {}, error: {}".format(u, i, prediction, error)
+                    error = abs(error)
+                    mae += error
+                    rmse += (error)**2
+            
+            mae = mae / NPREDICTIONS
+            rmse = sqrt(rmse / NPREDICTIONS)
+            end_time = time.clock()
+            print "MAE: ", mae
+            print "RMSE: ", rmse
+            print "tpred: ", end_time-start_time
         
     
     def testIBbaseline(self, id, predict):
@@ -100,7 +133,35 @@ class Test():
         tmodel=timeit.timeit(CF.build_model, number=1)
         print "tmodel: {}".format(tmodel)
         
-        #CF.print_model()
+        if (predict):
+            print "PREDICTION"
+            start_time = time.clock()
+            mae = 0
+            rmse = 0
+            predictions = 0
+            pperuser = int(floor(NPREDICTIONS/n))
+            additionals = NPREDICTIONS - pperuser * n
+            for u in range(n):
+                Iu = [i for i in range(m) if B[u][i]==1]
+                if u <= additionals:
+                    sampsize = pperuser + 1
+                else:
+                    sampsize = pperuser
+                sampling = random.sample(Iu, sampsize)
+                for i in sampling:
+                    prediction = CF.nn_prediction(u,i, K)
+                    error = prediction - R[u][i]
+                    #print "u: {}, i: {}, prediction: {}, error: {}".format(u, i, prediction, error)
+                    error = abs(error)
+                    mae += error
+                    rmse += (error)**2
+            
+            mae = mae / NPREDICTIONS
+            rmse = sqrt(rmse / NPREDICTIONS)
+            end_time = time.clock()
+            print "MAE: ", mae
+            print "RMSE: ", rmse
+            print "tpred: ", end_time-start_time
         
 N_PARAMS = [100, 200, 300, 400, 500]
  
@@ -110,7 +171,7 @@ PREDICT = True
 for id,n in enumerate(N_PARAMS):
     T = Test().eval_data(n=n).mean_centered()
     T.testUBbaseline(id*10+0, PREDICT)
-     
+       
 for id,m in enumerate(M_PARAMS):
     T = Test().eval_data(n=200,m=m).mean_centered()
     T.testIBbaseline(id*10+100, PREDICT)

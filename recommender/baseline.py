@@ -33,6 +33,51 @@ class UBCF(object):
             return 0
         else :
             return  d / (sqrt(su) * sqrt(sv))
+        
+    def nn_prediction(self,u,i,k):
+        # Find K best peers
+        
+        # Remove all users who have not rated the target item
+        candidates = []
+        for v in range(self.n):
+            if v == u: # skip target user
+                continue
+            if self.B[v][i] == 1:
+                candidates.append(v)
+        
+        peers = []
+        def find_minpeer(peers):
+            min_peer = peers[0]
+            for v in peers:
+                if self.S[u][v] < self.S[u][min_peer]:
+                    min_peer = v
+            return min_peer
+        
+        for v in candidates:
+            if len(peers) < k:
+                peers.append(v)
+                min_peer = find_minpeer(peers)
+            
+            if self.S[u][v] < self.S[u][min_peer]:
+                peers.remove(min_peer)
+                peers.append(v)
+                min_peer = find_minpeer(peers)
+        #print peers
+        rating = 0
+        norm = 0
+        for v in peers:
+            if self.S[u][v] >= 0:
+                rating += self.R[v][i] * self.S[u][v]
+                norm += self.S[u][v]
+            #print "r: {}, n: {}".format(rating, norm)
+        if norm == 0:
+            return 0
+        return rating / norm
+        
+        
+            
+                
+        
             
 
 
@@ -71,6 +116,45 @@ class IBCF(object):
         else :
             return  d / (sqrt(si) * sqrt(sj))
     
+    def nn_prediction(self,u,i,k):
+        # Find K best peers
+        
+        # Remove all users who have not rated the target item
+        candidates = []
+        for j in range(self.m):
+            if j == i: # skip target user
+                continue
+            if self.B[u][j] == 1:
+                candidates.append(j)
+        
+        peers = []
+        def find_minpeer(peers):
+            min_peer = peers[0]
+            for j in peers:
+                if self.S[i][j] < self.S[i][min_peer]:
+                    min_peer = j
+            return min_peer
+        
+        for j in candidates:
+            if len(peers) < k:
+                peers.append(j)
+                min_peer = find_minpeer(peers)
+            
+            if self.S[i][j] < self.S[i][min_peer]:
+                peers.remove(min_peer)
+                peers.append(j)
+                min_peer = find_minpeer(peers)
+        #print peers
+        rating = 0
+        norm = 0
+        for j in peers:
+            if self.S[i][j] >= 0:
+                rating += self.R[u][j] * self.S[i][j]
+                norm += self.S[i][j]
+            #print "r: {}, n: {}".format(rating, norm)
+        if norm == 0:
+            return 0
+        return rating / norm
     
     
     
