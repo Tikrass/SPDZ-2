@@ -1,5 +1,5 @@
 from math import sqrt, isnan
-from test.test_smtplib import sim_auth
+
 class UBCF(object):
     def __init__(self, n, m, ratings, bitratings):
         self.S = [[0 for _ in range(n)] for _ in range(n)] # Similarity model

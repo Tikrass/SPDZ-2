@@ -98,9 +98,9 @@ class Test():
         CF = baseline.IBCF(n, m, R, B)
         
         tmodel=timeit.timeit(CF.build_model, number=1)
-        #print "tmodel: {}".format(tmodel)
+        print "tmodel: {}".format(tmodel)
         
-        CF.print_model()
+        #CF.print_model()
         
 N_PARAMS = [100, 200, 300, 400, 500]
  
