@@ -50,7 +50,7 @@ class IBCF(object):
                 s_ij = self.cosine(i,j)
                 self.S[i][j] = s_ij
                 self.S[j][i] = s_ij
-                print "{} to {}\r".format(i,j),
+                #print "{} to {}\r".format(i,j),
             
     def print_model(self):
             for i in range(self.m):
