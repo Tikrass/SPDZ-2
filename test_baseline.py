@@ -130,6 +130,7 @@ class Test():
         
         CF = baseline.IBCF(n, m, R, B)
         
+        print "BUILD MODEL"
         tmodel=timeit.timeit(CF.build_model, number=1)
         print "tmodel: {}".format(tmodel)
         

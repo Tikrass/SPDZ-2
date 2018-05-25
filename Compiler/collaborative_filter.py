@@ -267,9 +267,11 @@ class IBCosineCF(object):
             dot.write(dot.read() + self.R[u][i] * self.R[u][j])
             sumi.write(sumi.read() + self.R2[u][i] * self.B[u][j])
             sumj.write(sumj.read() + self.R2[u][j] * self.B[u][i])
-        
-        cos = dot.reveal()/(sumi.read() * sumj.read()).reveal().sqrt()
-        
+        if_then(dot.reveal() == 0)
+        cos = cfix(0)
+        else_then()
+        cos = dot.reveal()/(sumi.read() * sumj.read()).sqrt().reveal()
+        end_if()
         if DEBUG >= INTERMEDIATE:
             print_ln("dot: %s", dot.reveal())
             print_ln("sumi: %s, sumj: %s", sumi.reveal(), sumj.reveal())

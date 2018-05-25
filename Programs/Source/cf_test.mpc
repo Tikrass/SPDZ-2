@@ -3,7 +3,10 @@ from recommender import *
 import sys
 from config_mine import *
 from math import sqrt, floor, ceil
-import random
+import random as random2
+
+random = random2.Random()
+random.seed()
 
 # Program parameters
 sys.setrecursionlimit(100000)
@@ -378,10 +381,10 @@ class Test():
         #########################
         CF.delete()
 
-# N_PARAMS = [100, 200, 300, 400, 500]
-N_PARAMS = [100]
-# M_PARAMS = [2000, 3000, 4000, 5000, 6000]
-M_PARAMS = [2000]
+N_PARAMS = [100, 200, 300, 400, 500]
+#N_PARAMS = [100]
+M_PARAMS = [2000, 3000, 4000, 5000, 6000]
+#M_PARAMS = [2000]
   
 PREDICT = True
 for id,n in enumerate(N_PARAMS):
