@@ -1,5 +1,6 @@
 import subprocess
 
+
 class InputFp:
     def __init__(self,player):
         self.input_fp = []
@@ -26,4 +27,3 @@ class InputFp:
             self.append_fp(*values)
         else:
             self.append_fp_sparse_array(values, capacity)
-    

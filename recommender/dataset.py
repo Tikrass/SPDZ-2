@@ -1,7 +1,7 @@
 import csv
 from scipy.sparse import lil_matrix
 
-class dataset:
+class Dataset:
     def __init__(self, folder, separator=',', quotechar='"', ratings_file_name="ratings.csv", movies_file_name="movies.csv"):
         self.ratings_file_name=ratings_file_name
         self.movies_file_name=movies_file_name
@@ -12,65 +12,72 @@ class dataset:
         self.ratings_file_path=folder+"/"+ratings_file_name
         self.movies_file_path=folder+"/"+movies_file_name
         
-        self.n_max = self.__count_userids()
-        self.mid_dict,self.mid_invdict = self.__canonicalize_movieids()
-        self.m_max = len(self.mid_dict)
+        # mid -> i    i -> mid
+        self.i_to_mid,self.mid_to_i = self.__canonicalize_movieids()
         
-            
-    def __count_userids(self):
-        with open(self.ratings_file_path, 'r') as ratings_file:
-            highest_id=0;
-            reader = csv.reader(ratings_file, delimiter=self.delimiter, quotechar=self.quotechar)
-            header = next(reader)
-            assert(header[0] == 'userId')
-            for row in reader:
-                if int(row[0]) > highest_id :
-                    highest_id = int(row[0])
-        return highest_id            
-            
+        self.rating_list = self.__list_ratings()
+        
+        self.n_max = self.__count_userids()
+        
+        self.m_max = len(self.mid_to_i)
     
     def __canonicalize_movieids(self):
         counter = 0
-        dict = []
-        inv_dict = {}
+        i_to_mid = []
+        mid_to_i = {}
         with open(self.movies_file_path, 'r') as movies_file:
             reader = csv.reader(movies_file, delimiter=self.delimiter, quotechar=self.quotechar)
             header = next(reader)
             assert(header[0] == 'movieId')
             for row in reader:
-                movieid = int(row[0])
-                dict.append(movieid)
-                inv_dict[movieid] = counter
+                mid = int(row[0])
+                i_to_mid.append(mid)
+                mid_to_i[mid] = counter
                 counter+=1
-        return dict, inv_dict   
+        return i_to_mid, mid_to_i   
     
-    def read(self, n=None, m=None):
-        if n != None and n <= self.n_max:
-            self.n = n
-        else:
-            self.n = self.n_max
-        
-        if m != None and m <= self.m_max:
-            self.m = m
-        else:
-            self.m = self.m_max
-        
-        R = lil_matrix((self.n, self.m))
-        Rb = lil_matrix((self.n, self.m), dtype=int)
-                                       
+    def __list_ratings(self):
+        ratings = []
         with open(self.ratings_file_path, 'r') as ratings_file:
             reader = csv.reader(ratings_file, delimiter=self.delimiter, quotechar=self.quotechar)
             header = next(reader)    
+            assert(header[0] == 'userId')
+            assert(header[1] == 'movieId')
+            assert(header[2] == 'rating')
             for rating in reader:
                 u = int(rating[0])-1
                 mid = int(rating[1])
-                i = self.mid_invdict[mid]
+                i = self.mid_to_i[mid]
                 r = float(rating[2])
-                    
-                if u < self.n and mid < self.m:
-                    R[u,i] = r
-                    Rb[u,i] = 1
-        return R.toarray(), Rb.toarray()
+                ratings.append((u,i,r))
+        return ratings
+    
+    def __count_userids(self):
+        highest_id=0;
+        for (u,i,r) in self.rating_list:
+            if u > highest_id:
+                highest_id = u
+        return highest_id+1
+            
+    
+    
+    
+    def get(self, n=None, m=None):
+        if n == None or n >= self.n_max:
+            n = self.n_max
+        
+        if m == None or m >= self.m_max:
+            m = self.m_max
+        
+        R = lil_matrix((n, m))
+        Rb = lil_matrix((n, m), dtype=int)
+        Rlist = []                        
+        for (u,i,r) in self.rating_list: 
+            if u < n and i < m:
+                Rlist.append((u,i,r))
+                R[u,i] = r
+                Rb[u,i] = 1
+        return R.toarray(), Rb.toarray(), Rlist, n, m
     
 
     
