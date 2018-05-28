@@ -124,7 +124,7 @@ Uncomment to measure UB performance
 """
 Debugging 
 """        
-# K = 10
+# K = 9
 # F = 4
 # N = 100
 # M = 2000
