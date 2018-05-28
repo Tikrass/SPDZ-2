@@ -5,404 +5,182 @@ from config_mine import *
 from math import sqrt, floor, ceil
 import random as random2
 
+# Fix constant seed from compiler
 random = random2.Random()
 random.seed()
 
-# Program parameters
+# Global parameters
 sys.setrecursionlimit(100000)
-
 program.bit_length = 80
 program.security = 40
 sfix.set_precision(14, 28)
 cfix.set_precision(14, 28)
-
 # Verbosity
 DEBUG = 2
 
-# IO Interface
+# IO Interface 
+# -> Get all inputs from the same player.
 IO = InputFp(0)
 
-
-
-class Test():
-    def __init__(self):
-        self.n = 0
-        self.m = 0
-        self.rowcap = None
     
-    # DATA
-    def small_data(self):
-        self.n = 5
-        self.m = 5
-        self.rowcap = 5
-        self.R =[[0.0,1.0,3.0,4.0,0.0],
-                 [2.0,1.0,0.0,4.0,0.0],
-                 [0.0,2.0,3.0,0.0,3.0],
-                 [5.0,0.0,2.0,1.0,0.0],
-                 [4.0,3.0,0.0,1.0,4.0]]
-        self.B = [[0,1,1,1,0],
-                   [1,1,0,1,0],
-                   [0,1,1,0,1],
-                   [1,0,1,1,0],
-                   [1,1,0,1,1]]
-        
-        self.K = 2
-
-        self.NPREDICTIONS = 5
-        
-        return self
+def testUBplain(T):
+    print_ln("############################\nNEW TEST RUN")
+    print_ln("User-based CF")
+    print_ln("n = %s\nm = %s", T.n, T.m)
+    print_ln("")
     
-    def eval_data(self, n=None, m=None): 
-        folder = "Prep-Data/ml-latest-small"
-        
-        D = dataset(folder)
-        self.R, self.B = D.read(n,m)
-        self.n = D.n
-        self.m = D.m
-        self.rowcap = 2400
-        
-        self.K = 10
-
-        self.NPREDICTIONS = 500
-        
-        return self
+    T.CF = UBCosineCF(T.n,T.m)
     
-    def mean_centered(self):
-        self.mean = [0 for _ in range(self.n)]
-        for u in range(self.n):
-            count = 0
-            for i in range(self.m):
-                self.mean[u] += self.R[u][i]
-                count += self.B[u][i]
-            self.mean[u] = self.mean[u]/count
-            for i in range(self.m):
-                if self.B[u][i] == 1:
-                    self.R[u][i] = self.R[u][i] - self.mean[u]
-        
-        return self
+    T.prep_private_plain_input(IO)
+    T.private_plain_input(T.CF)
     
-    def prep_private_input(self):
-        #########################
-        # Preparing Private Input
-        #########################
-        print("Preparing rating input.")
-        for u in range(self.n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array([int(r* (2**sfix.f)) for r in self.R[u]])
-        
-        print("Preparing rating2 input.")
-        for u in range(self.n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array([int((r**2)* (2**sfix.f)) for r in self.R[u]])
-            
-        print("Preparing bitrating input.")
-        for u in range(self.n):
-            sys.stdout.write(str(u)+'\r')
-            IO.append_fp_array(self.B[u])
     
-    def private_input(self, CF, id):
-        #########################
-        # Reading Private Input
-        #########################
-        
-        start_timer(id+1)
-        if DEBUG >= VERBOSE:
-            print_ln("Loading private input.")
-        @for_range(self.n)
-        def user_loop1(i):
-            CF.load_ratings_from(i, 0)
-            
-        @for_range(self.n)
-        def user_loop2(i):
-            CF.load_ratings2_from(i, 0)
+    #########################
+    # Building Model
+    #########################
+    start_timer(T.id+2)
+    T.CF.build_model()
+    stop_timer(T.id+2)
 
-        @for_range(self.n)
-        def user_loop3(i):
-            CF.load_bitratings_from(i, 0)
-        stop_timer(id+1)
+def testUBsparse(T, cap):
+    print_ln("############################\nNEW TEST RUN")
+    print_ln("Sparse User-based CF")
+    print_ln("n = %s\nm = %s, cap = %s", T.n, T.m, cap)
+    print_ln("")
     
-    def testUBplain(self, id, predict):
-        
-        n = self.n
-        m = self.m
-        R = self.R
-        B = self.B
-        CF = UBCosineCF(n,m)
-        K = self.K
-        NPREDICTIONS = self.NPREDICTIONS
-            
-        print_ln("############################\nNEW TEST RUN")
-        print_ln("User-based CF")
-        print_ln("n = %s\nm = %s", n, m)
-        print_ln("")
-            
-        self.prep_private_input()
-        self.private_input(CF, id)
-        
-        
-        #########################
-        # Building Model
-        #########################
-        start_timer(id+2)
-        CF.build_model()
-        stop_timer(id+2)
-        
-        #########################
-        # Output Model
-        #########################
-        if DEBUG >= VERBOSE_VALUES:
-            print_ln("Model:")
-            CF.print_model()
-            
-        #########################
-        # Prediction
-        #########################
-        if (predict):
-            start_timer(id+3)
-            if DEBUG >= VERBOSE_VALUES:
-                print_ln("Prediction (MAE, RMSE):")
-            
-            mae = cfix(0)
-            rmse = cfix(0)
-            predictions = 0
-            pperuser = int(floor(NPREDICTIONS/n))
-            additionals = NPREDICTIONS - pperuser * n
-            for u in range(n):
-                Iu = [i for i in range(m) if B[u][i]==1]
-                if u <= additionals:
-                    sampsize = pperuser + 1
-                else:
-                    sampsize = pperuser
-                sampling = random.sample(Iu, sampsize)
-                for i in sampling:
-                    if DEBUG == VERBOSE_PROGRESS:
-                        print_str("\ruser %s item %s       ", u, i)
-                    prediction = CF.predict_rating(u,i, K).reveal()
-                    if self.mean:
-                        prediction = prediction
-                    error = prediction - R[u][i]
-                    error = cint(error>=0) * (error + error) - error
-                    mae += error
-                    rmse += (error)**2
-                    if DEBUG>=VERBOSE_VALUES:
-                        print_ln('u: %s, i: %s, prediction: %s, expected: %s (error: %s) ', u, i,prediction, R[u][i], error)
-                        print_ln("mae: %s, rmse %s", mae, rmse)
-                if DEBUG>=VERBOSE_VALUES:
-                    print_ln(' ')
-            if DEBUG == VERBOSE_PROGRESS:
-                print_str("\r")
-            
-            mae = mae / NPREDICTIONS
-            rmse = (rmse / NPREDICTIONS).sqrt()
-            print_ln("MAE: %s\nRMSE: %s", mae, rmse)
-            stop_timer(id+3)
-        
-        #########################
-        # Clean up memory
-        #########################
-        CF.delete()
-
-    def testIB(self, id, predict):
-        n = self.n
-        m = self.m
-        R = self.R
-        B = self.B
-        K = self.K
-        NPREDICTIONS = self.NPREDICTIONS
+    T.CF = SparseUBCosineCF(T.n,T.m, cap)
     
-        CF = IBCosineCF(n,m)
-            
-        print_ln("############################\nNEW TEST RUN")
-        print_ln("Item-based CF")
-        print_ln("n = %s\nm = %s", n, m)
-        print_ln("")
-            
-        self.prep_private_input()
-        self.private_input(CF,id)
-            
-
-        
-        #########################
-        # Building Model
-        #########################
-        start_timer(id+2)
-        CF.build_model()
-        stop_timer(id+2)
-        
-        #########################
-        # Output Model
-        #########################
-        if DEBUG >= VERBOSE_VALUES:
-            print_ln("Model:")
-            CF.print_model()
-            
-        #########################
-        # Prediction
-        #########################
-        if (predict):
-            start_timer(id+3)
-            if DEBUG >= VERBOSE_VALUES:
-                print_ln("Prediction (MAE, RMSE):")
-            
-            mae = cfix(0)
-            rmse = cfix(0)
-            predictions = 0
-            pperuser = int(floor(NPREDICTIONS/n))
-            additionals = NPREDICTIONS - pperuser * n
-            for u in range(n):
-                Iu = [i for i in range(m) if B[u][i]==1]
-                if u <= additionals:
-                    sampsize = pperuser + 1
-                else:
-                    sampsize = pperuser
-                sampling = random.sample(Iu, sampsize)
-                for i in sampling:
-                    if DEBUG == VERBOSE_PROGRESS:
-                        print_str("\ruser %s item %s       ", u, i)
-                    prediction = CF.predict_rating(u,i, K)
-                    if self.mean:
-                        prediction = prediction
-                    error = prediction - R[u][i]
-                    error = cint(error>=0) * (error + error) - error # abs
-                    mae += error
-                    rmse += (error)**2
-                    
-                    if DEBUG>=VERBOSE_VALUES:
-                        print_ln('u: %s, i: %s, prediction: %s, expected: %s (error: %s) ', u, i,prediction, R[u][i], error)
-                        print_ln("mae: %s, rmse %s", mae, rmse)
-            if DEBUG == VERBOSE_PROGRESS:
-                print_str("\r")
-            
-            mae = mae / NPREDICTIONS
-            rmse = (rmse / NPREDICTIONS).sqrt()
-            print_ln("MAE: %s\nRMSE: %s", mae, rmse)
-            stop_timer(id+3)
-        
-        #########################
-        # Clean up memory
-        #########################
-        CF.delete()
+    T.prep_sparse_input(IO)
+    T.private_sparse_input(T.CF)
     
-    def testUBsparse(self, id):
-        
-        n = self.n
-        m = self.m
-        R = self.R
-        B = self.B
-        cap = self.rowcap
-        K = self.K
-        NPREDICTIONS = self.NPREDICTIONS
-        
-        CF = SparseUBCosineCF(n,m)
-            
-        print_ln("############################\nNEW TEST RUN")
-        print_ln("Sparse User-based CF")
-        print_ln("n = %s\nm = %s, cap = %s", n, m, cap)
-        print_ln("")
-            
-        #########################
-        # Preparing Private Input
-        #########################
-        
-        def append_fp_sparse_array(ratings,bitratings, capacity):
-            input=[]
-            tailpointer = 0
-            for k in range(len(values)):
-                if bitratings[k] != 0:
-                    input += [k,ratings[k]*(2**sfix.f), (ratings[k]**2)* (2**sfix.f)]
-                    tailpointer += 1;
-            if tailpointer > capacity:
-                raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
-            for _ in range(tailpointer, capacity):
-                input += [0,0,0]
-            input += [tailpointer]
-            self.input_fp +=  input
-            
-        print("Preparing sparse rating input.")
-        for u in range(n):
-            sys.stdout.write(str(u)+'\r')
-            append_fp_sparse_array(R[u], B[u], cap)
-        
+    #########################
+    # Building Model
+    #########################
+    start_timer(T.id+2)
+    T.CF.build_model()
+    stop_timer(T.id+2)
     
-        
-        
-        #########################
-        # Reading Private Input
-        #########################
-        
-        
-        start_timer(id+1)
-        if DEBUG >= VERBOSE:
-            print_ln("Loading private input.")
-        @for_range(n)
-        def user_loop1(i):
-            CF.load_ratings_from(i, 0)
-        stop_timer(id+1)
-        
-        
-        #########################
-        # Building Model
-        #########################
-        start_timer(id+2)
-        CF.build_model()
-        stop_timer(id+2)
-        
-        #########################
-        # Output Model
-        #########################
-        if DEBUG >= VERBOSE_VALUES:
-            print_ln("Model:")
-            CF.print_model()
-            
-        #########################
-        # Prediction
-        #########################
-        start_timer(id+3)
-        if DEBUG >= VERBOSE_VALUES:
-            print_ln("Prediction ALL:")
-        @for_range(n)
-        def user_loop(i):
-            @for_range(m)
-            def item_loop(j):
-                if DEBUG == VERBOSE_PROGRESS:
-                    print_str("\ruser %s item %s       ", i, j)
-                prediction = CF.predict_rating(i,j).reveal()
-                if DEBUG>=VERBOSE_VALUES:
-                    print_str('%s ', prediction)
-                    
-            if DEBUG>=VERBOSE_VALUES:
-                print_ln(' ')
-        if DEBUG == VERBOSE_PROGRESS:
-            print_str("\r")
-        stop_timer(id+3)
-        
-        #########################
-        # Clean up memory
-        #########################
-        CF.delete()
+def testIBplain(T):   
+    print_ln("############################\nNEW TEST RUN")
+    print_ln("Item-based CF")
+    print_ln("n = %s\nm = %s", T.n, T.m)
+    print_ln("")
+    
+    T.CF = IBCosineCF(T.n, T.m)
+    
+    T.prep_private_plain_input(IO)
+    T.private_plain_input(T.CF)
+    
+    #########################
+    # Building Model
+    #########################
+    start_timer(T.id+2)
+    T.CF.build_model()
+    stop_timer(T.id+2)
 
-N_PARAMS = [100, 200, 300, 400, 500]
-#N_PARAMS = [100]
-M_PARAMS = [2000, 3000, 4000, 5000, 6000]
-#M_PARAMS = [2000]
-  
-PREDICT = True
-for id,n in enumerate(N_PARAMS):
-    T = Test().eval_data(n=n).mean_centered()
-    T.testUBplain(id*10+0, PREDICT)
-      
-for id,m in enumerate(M_PARAMS):
-    T = Test().eval_data(n=200,m=m).mean_centered()
-    T.testIB(id*10+100, PREDICT)
+def testPredictions(T, knn_params, sampsize): 
+    if T.CF == None:
+        raise RuntimeError("Call another test to build model first!")
+    
+    print_ln("PREDICTIONS")
+    print_ln("k    f     mae      rmse")
+    
+    timer_count = 1
+    for (k, f) in knn_params:
+        start_timer(T.id*100+timer_count)
+        
+        mae = cfix(0)
+        rmse = cfix(0)
+        
+        sampling = random.sample(T.Rlist,sampsize)
+        
+        for (u,i,r) in sampling:
+            print_str("%s to %s    \r", u, i)
+            prediction = T.CF.nn_prediction(u,i, k, f)
+            if isinstance(prediction, sfix):
+                prediction = prediction.reveal()
+            error = prediction + T.mean[u] - r
+            error = cint(error>=0) * (error + error) - error
+            mae += error
+            rmse += (error)**2
+        
+        mae = mae / sampsize
+        rmse = (rmse / sampsize).sqrt()
+        
+        print_ln("%s %s %s %s",k, f, mae, rmse)
+        stop_timer(T.id*100+timer_count)
+        timer_count += 1
 
+"""
+Uncomment to measure UB CF performance
+"""
+# PREDICT = True
+# NPREDICTIONS = 5000
+# N_PARAMS = [100,200,300,400,500]
+# K = 9
+# F = 4
+#   
+#    
+# for id,n in enumerate(N_PARAMS):
+#     T = Test(id*10).eval_data(n=n).mean_centered()
+#     testUBplain(T)
+#     if PREDICT:
+#         testPredictions(T, [(K, F)], NPREDICTIONS)
+#     T.CF.delete()
 
-
-# T = Test().small_data().mean_centered()
-# T.testUBplain(10, True)
-# T = Test().small_data().mean_centered()
-# T.testIB(20, True)
-
-# Write private input to file
+"""
+Uncomment to measure IB CF performance
+"""      
+# PREDICT = True
+# NPREDICTIONS = 5000
+# N = 200
+# M_PARAMS = [2000,3000,4000,5000,6000]
+# K = 9
+# F = 4  
+# for id,m in enumerate(M_PARAMS):
+#     T = Test(id*10+100).eval_data(m=m).mean_centered()
+#     testIBplain(T)
+#     if PREDICT:
+#         testPredictions(T, [(K, F)], NPREDICTIONS)
+#     T.CF.delete()
+ 
+"""
+Debugging 
+"""        
+# K = 9
+# F = 4
+# N = 100
+# M = 2000
+# NPREDICTIONS = 5000
+#   
+# T = Test(1).small_data().mean_centered() 
+# testUBplain(T)
+# T.CF.print_model()
+# testPredictions(T, [(2, 14)], 16)
+# T.CF.delete()
+#   
+# T = Test(2).small_data().mean_centered() 
+# testIBplain(T)
+# T.CF.print_model()
+# testPredictions(T, [(2, 14)], 16)
+# T.CF.delete()
+#   
+# T = Test(3).eval_data(n=N, m=M).mean_centered() 
+# testUBplain(T)
+# testPredictions(T, [(K, F)], NPREDICTIONS)
+# T.CF.delete()
+#        
+# T = Test(4).eval_data(n=100, m=2000).mean_centered() 
+# testIBplain(T)
+# testPredictions(T, [(K, F)], NPREDICTIONS)
+# T.CF.delete()
+        
+"""
+Write Input to file
+DO NOT UNCOMMENT
+"""
+print "Write private input"        
 IO.gen_input_fp()
+
 
         

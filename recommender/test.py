@@ -53,7 +53,7 @@ class Test():
         
         return self
     
-    def prep_private_input(self, IO):
+    def prep_private_plain_input(self, IO):
         #########################
         # Preparing Private Input
         #########################
@@ -69,7 +69,7 @@ class Test():
         for u in range(self.n):
             IO.append_fp_array(self.B[u])
     
-    def private_input(self, CF):
+    def private_plain_input(self, CF):
         #########################
         # Reading Private Input
         #########################
@@ -78,14 +78,49 @@ class Test():
 
         print_ln("Loading private input.")
         @for_range(self.n)
-        def user_loop1(i):
-            CF.load_ratings_from(i, 0)
+        def user_loop1(u):
+            CF.load_ratings_from(u, 0)
             
         @for_range(self.n)
-        def user_loop2(i):
-            CF.load_ratings2_from(i, 0)
+        def user_loop2(u):
+            CF.load_ratings2_from(u, 0)
 
         @for_range(self.n)
-        def user_loop3(i):
-            CF.load_bitratings_from(i, 0)
+        def user_loop3(u):
+            CF.load_bitratings_from(u, 0)
         stop_timer(self.id+1)
+        
+        
+    def prep_private_sparse_input(self, IO):
+        #########################
+        # Preparing Private Input
+        #########################
+        
+        print("Preparing sparse rating input.")
+        for u in range(n):
+            input=[]
+            tailpointer = 0
+            for i in range(self.m):
+                if bitratings[i] != 0:
+                    input += [i,self.R[i]*(2**sfix.f), (self.R[i]**2)*(2**sfix.f)]
+                    tailpointer += 1;
+            if tailpointer > self.cap:
+                raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
+            for _ in range(tailpointer, capacity):
+                input += [0,0,0] # Padding
+            input += [tailpointer]
+            IO.append_fp_array +=  input
+            
+    def private_plain_input(self, CF):
+        #########################
+        # Reading Private Input
+        #########################
+        
+        start_timer(self.id+1)
+
+        print_ln("Loading private sparse input.")
+        @for_range(self.n)
+        def user_loop1(u):
+            CF.load_ratings_from(u, 0)
+        stop_timer(self.id+1)
+            
