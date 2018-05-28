@@ -190,7 +190,7 @@ class IBCF(object):
             c = 0
             for j in range(self.m):
                 if i != j and self.S[i][j] > epsilon:
-                    c += self.B[i][j]
+                    c += self.B[u][j]
             delta = 2**(-e)
             if c > k:
                 epsilon += delta
