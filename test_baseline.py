@@ -118,11 +118,12 @@ Uncomment to measure IB CF performance
 """      
 # PREDICT = True
 # NPREDICTIONS = 5000
+# N = 200
 # M_PARAMS = [2000,3000,4000,5000,6000]
 # K = 9
 # F = 4  
 # for id,m in enumerate(M_PARAMS):
-#     T = Test(id*10+100).eval_data(m=m).mean_centered()
+#     T = Test(id*10+100).eval_data(n=N, m=m).mean_centered()
 #     testIBbaseline(T)
 #     if PREDICT:
 #         testPredictions(T, [(K, F)], NPREDICTIONS)
