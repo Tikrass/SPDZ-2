@@ -236,7 +236,7 @@ class IBCosineCF(object):
             def item_loop2(j):
                 if DEBUG >= VERBOSE_PROGRESS:
                     print_str("\r%s to %s     ", i,j)
-                s_ij = self._build_model(i,j)
+                s_ij = self.cosine(i,j)
                 self.S[i][j] = s_ij
                 self.S[j][i] = s_ij
         if DEBUG >= VERBOSE_PROGRESS:
@@ -244,7 +244,7 @@ class IBCosineCF(object):
             
             
     @method_block
-    def cosine_sim(self,i,j):
+    def cosine(self,i,j):
         dot = sfix.MemValue(0)
         sumi = sfix.MemValue(0)
         sumj = sfix.MemValue(0)

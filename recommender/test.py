@@ -111,7 +111,7 @@ class Test():
             input += [tailpointer]
             IO.append_fp_array +=  input
             
-    def private_plain_input(self, CF):
+    def private_sparse_input(self, CF):
         #########################
         # Reading Private Input
         #########################
