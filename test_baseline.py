@@ -97,13 +97,12 @@ Uncomment to Estimate Parameter f'
 # testPredictions(T, knn_params, NPREDICTIONS)
 
 """
-Uncomment to measure UB performance
+Uncomment to measure UB CF performance
 """
 
 # PREDICT = True
 # NPREDICTIONS = 5000
 # N_PARAMS = [100,200,300,400,500]
-# M_PARAMS = [2000,3000,4000,5000,6000]
 # K = 9
 # F = 4
 #  
@@ -113,7 +112,15 @@ Uncomment to measure UB performance
 #     testUBbaseline(T)
 #     if PREDICT:
 #         testPredictions(T, [(K, F)], NPREDICTIONS)
-#          
+
+"""
+Uncomment to measure IB CF performance
+"""      
+# PREDICT = True
+# NPREDICTIONS = 5000
+# M_PARAMS = [2000,3000,4000,5000,6000]
+# K = 9
+# F = 4  
 # for id,m in enumerate(M_PARAMS):
 #     T = Test(id*10+100).eval_data(m=m).mean_centered()
 #     testIBbaseline(T)

@@ -1,4 +1,7 @@
 from recommender import *
+from Compiler.types import sfix
+from Compiler.library import *
+
 folder = "Prep-Data/ml-latest-small"
 class Test():
     def __init__(self, id):
@@ -56,17 +59,14 @@ class Test():
         #########################
         print("Preparing rating input.")
         for u in range(self.n):
-            sys.stdout.write(str(u)+'\r')
             IO.append_fp_array([int(r* (2**sfix.f)) for r in self.R[u]])
         
         print("Preparing rating2 input.")
         for u in range(self.n):
-            sys.stdout.write(str(u)+'\r')
             IO.append_fp_array([int((r**2)* (2**sfix.f)) for r in self.R[u]])
             
         print("Preparing bitrating input.")
         for u in range(self.n):
-            sys.stdout.write(str(u)+'\r')
             IO.append_fp_array(self.B[u])
     
     def private_input(self, CF):
@@ -75,8 +75,8 @@ class Test():
         #########################
         
         start_timer(self.id+1)
-        if DEBUG >= VERBOSE:
-            print_ln("Loading private input.")
+
+        print_ln("Loading private input.")
         @for_range(self.n)
         def user_loop1(i):
             CF.load_ratings_from(i, 0)
