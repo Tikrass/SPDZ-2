@@ -74,7 +74,6 @@ class SPDZTest(Test):
     def __init__(self, id, IO):
         Test.__init__(self, id)
         self.IO = IO
-        
 
     
     def _prep_private_plain_input(self):
@@ -227,7 +226,6 @@ class SPDZTest(Test):
                 error = cint(error>=0).if_else(error, -error)
                 mae += error
                 rmse += (error)**2
-                print_ln("prediction: %s, rating: %s, error: %s, mae: %s, rmse: %s", prediction, r, error, mae, rmse )
             
             mae = mae / sampsize
             rmse = (rmse / sampsize).sqrt()
