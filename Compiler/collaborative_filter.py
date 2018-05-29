@@ -69,18 +69,22 @@ class UserBasedModel(object):
         if DEBUG >= INTERMEDIATE:
             print_ln("Predicting rating:\n user %s, item %s", u, i)
         
-        r = sfix.MemValue(0)
-        n = sfix.MemValue(0)
+        r = MemValue(sint(0))
+        n = MemValue(sint(0))
         
         @for_range(self.n)
         def user_loop(v):
             if_then(u != v)
-            c = (self.S[u][v] >= epsilon) * self.B[v][i]
-            r.write(r + c * self.S[u][v] * self.R[v][i] )
-            n.write(n + c * self.S[u][v])
+            c = sint(self.S[u][v] >= epsilon) * self.B[v][i]
+            r.write(r.read() + c * self.S[u][v].conv() * self.R[v][i].conv() )
+            n.write(n.read() + c * self.S[u][v].conv())
             end_if()
         
-        return r.read() / n.read()   
+        r = sfix(TruncPr(r.read(), 2 * sfix.k, sfix.f, sfix.kappa))
+        n = sfix(n.read())
+
+        prediction = sint(n != 0).if_else(r / n, sfix(0))  
+        return prediction 
     
     @method_block
     def nn_prediction(self, u, i, k, f):
@@ -97,7 +101,7 @@ class UserBasedModel(object):
             delta = cfix(cint(2**(sfix.f-(round))))
             epsilon.write( epsilon.read() + (c > k) * delta)
             epsilon.write( epsilon.read() - (c < k) * delta)
-            #print_ln("e: %s, d: %s, c:%s", epsilon.read(), delta.read(), c)
+            
         return self.threshold_prediction(u, i, epsilon.read())
         
     
@@ -136,23 +140,21 @@ class UBCosineCF(UserBasedModel):
     
     @method_block
     def cosine(self, u,v):
-        d = sfix.MemValue(0)
-        su = sfix.MemValue(0)
-        sv = sfix.MemValue(0)
+        d = MemValue(sint(0))
+        su = MemValue(sint(0))
+        sv = MemValue(sint(0))
         @for_range(self.m)
         def item_loop(i):
-            d.write(d.read() + self.R[u][i] * self.R[v][i])
-            su.write(su.read() + self.R2[u][i] * self.B[v][i])
-            sv.write(sv.read() + self.R2[v][i] * self.B[u][i])
+            d.write(d.read() + self.R[u][i].conv() * self.R[v][i].conv())
+            su.write(su.read() + self.R2[u][i].conv() * self.B[v][i])
+            sv.write(sv.read() + self.R2[v][i].conv() * self.B[u][i])
         
-        cos = d.read()/(su.read() * sv.read()).sqrt() 
+        # Truncate only once
+        d = sfix(TruncPr(d.read(), 2 * sfix.k, sfix.f, sfix.kappa))
+        norm = sfix(su.read()).sqrt() * sfix(sv.read()).sqrt()
         
-        if DEBUG >= INTERMEDIATE:
-            print_ln("dot: %s", d.reveal())
-            print_ln("sumu: %s, sumv: %s", su.reveal(), sv.reveal())
-            print_ln("cos: %s", d.reveal())
-            print_ln(" ")
-            
+        not_zero = sint(norm != 0)
+        cos = not_zero.if_else(d/norm, sfix(0))             
         return cos
             
     def delete(self):
@@ -267,36 +269,29 @@ class IBCosineCF(object):
             @for_range(i,self.m)
             def item_loop2(j):
                 if DEBUG >= VERBOSE_PROGRESS:
-                    print_str("\r%s to %s     ", i,j)
+                    print_str("%s to %s     \r", i,j)
                 s_ij = self.cosine(i,j)
                 self.S[i][j] = s_ij
                 self.S[j][i] = s_ij
-        if DEBUG >= VERBOSE_PROGRESS:
-            print_str("\r")
-            
             
     @method_block
-    def cosine(self,i,j):
-        dot = sfix.MemValue(0)
-        sumi = sfix.MemValue(0)
-        sumj = sfix.MemValue(0)
+    def cosine(self, i,j):
+        d = MemValue(sint(0))
+        si = MemValue(sint(0))
+        sj = MemValue(sint(0))
         @for_range(self.n)
         def item_loop(u):
-            dot.write(dot.read() + self.R[u][i] * self.R[u][j])
-            sumi.write(sumi.read() + self.R2[u][i] * self.B[u][j])
-            sumj.write(sumj.read() + self.R2[u][j] * self.B[u][i])
-        if_then(dot.reveal() == 0)
-        cos = cfix(0)
-        else_then()
-        cos = dot.reveal()/(sumi.read() * sumj.read()).sqrt().reveal()
-        end_if()
-        if DEBUG >= INTERMEDIATE:
-            print_ln("dot: %s", dot.reveal())
-            print_ln("sumi: %s, sumj: %s", sumi.reveal(), sumj.reveal())
-            print_ln("cos: %s", cos)
-            print_ln(" ")
-            
-        return cos
+            d.write(d.read() + self.R[u][i].conv() * self.R[u][j].conv())
+            si.write(si.read() + self.R2[u][i].conv() * self.B[u][j])
+            sj.write(sj.read() + self.R2[u][j].conv() * self.B[u][i])
+        
+        # Truncate only once
+        d = sfix(TruncPr(d.read(), 2 * sfix.k, sfix.f, sfix.kappa))
+        norm = sfix(si.read()).sqrt() * sfix(si.read()).sqrt()
+        
+        not_zero = sint(norm != 0)
+        cos = not_zero.if_else(d/norm, sfix(0))             
+        return cos.reveal()
             
     def print_model(self):
         """
@@ -353,12 +348,15 @@ class IBCosineCF(object):
             c = (self.S[i][j] >= epsilon) * self.B[u][j].reveal()
             if_then(c)
             rating.write(rating.read() + self.S[i][j] * self.R[u][j].reveal() )
-            norm.write(norm + self.S[i][j])
-            #print_ln("R: %s, N: %s", rating_sum.reveal(), normalization.reveal())
+            norm.write(norm.read() + self.S[i][j])
             end_if()
             end_if()
-        
-        return rating.read() / norm.read()   
+        if_then(norm.read() == 0)
+        prediction = rating.read() / norm.read()  
+        else_then()
+        prediction = cfix(0)
+        end_if()
+        return prediction
     
     @method_block
     def nn_prediction(self, u, i, k, f):
