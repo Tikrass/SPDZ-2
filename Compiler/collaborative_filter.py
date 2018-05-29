@@ -385,9 +385,6 @@ class IBCosineCF(object):
         self.R2.delete()
         self.B.delete()
         
-        
-def OptimalCollaborativeFilter(nusers, nitems, capacity=None):
-    raise CompilerError('Not implemented yet!')
     
 
     

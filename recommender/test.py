@@ -18,7 +18,7 @@ random = random2.Random()
 random.seed()
 
 # Global parameters
-sys.setrecursionlimit(100000)
+sys.setrecursionlimit(1000000)
 
 
 folder = "Prep-Data/ml-latest-small"
@@ -220,13 +220,14 @@ class SPDZTest(Test):
             
             for (u,i,r) in sampling:
                 print_str("%s to %s    \r", u, i)
-                prediction = self.CF.nn_prediction(u,i, k, f)
+                prediction = self.CF.nn_prediction(u,i, k, f) + cfix(self.mean[u])
                 if isinstance(prediction, sfix):
                     prediction = prediction.reveal()
-                error = prediction + self.mean[u] - r
-                error = cint(error>=0) * (error + error) - error
+                error = prediction - cfix(r)
+                error = cint(error>=0).if_else(error, -error)
                 mae += error
                 rmse += (error)**2
+                print_ln("prediction: %s, rating: %s, error: %s, mae: %s, rmse: %s", prediction, r, error, mae, rmse )
             
             mae = mae / sampsize
             rmse = (rmse / sampsize).sqrt()

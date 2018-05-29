@@ -15,8 +15,9 @@ N = 200
 M_PARAMS = [2000,3000,4000,5000,6000]
 K = 9
 F = 4  
+
 for id,m in enumerate(M_PARAMS):
-    T = SPDZTest(id*10+100, IO).eval_data(m=m).mean_centered()
+    T = SPDZTest(id*10+100, IO).eval_data(n=N,m=m).mean_centered()
     T.buildIBplain()
     if PREDICT:
         T.testPredictions([(K, F)], NPREDICTIONS)

@@ -16,7 +16,6 @@ N_PARAMS = [100,200,300,400,500]
 M = 3000
 K = 9
 F = 4
-   
     
 for id,n in enumerate(N_PARAMS):
     T = SPDZTest(id*10, IO).eval_data(n=n, m=M).mean_centered()
