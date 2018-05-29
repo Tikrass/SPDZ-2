@@ -42,12 +42,13 @@ def performance_ub():
     PREDICT = True
     NPREDICTIONS = 5000
     N_PARAMS = [100,200,300,400,500]
+    M = 5000
     K = 9
     F = 4
       
        
     for id,n in enumerate(N_PARAMS):
-        T = BaselineTest(id*10).eval_data(n=n).mean_centered()
+        T = BaselineTest(id*10).eval_data(n=n, m=M).mean_centered()
         T.buildUBbaseline()
         if PREDICT:
             T.testPredictions([(K, F)], NPREDICTIONS)
@@ -76,7 +77,7 @@ def debug():
     K = 9
     F = 4
     N = 100
-    M = 2000
+    M = 5000
     NPREDICTIONS = 5000
     
     T = BaselineTest(1).small_data().mean_centered() 

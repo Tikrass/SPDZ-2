@@ -302,6 +302,7 @@ class IBCosineCF(object):
         """
         Only for debugging
         """
+        print_ln("S")
         @for_range(min(self.m, 10))
         def item_loop(i):
             @for_range(min(self.m,10))

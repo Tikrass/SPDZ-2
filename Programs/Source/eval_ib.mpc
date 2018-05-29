@@ -1,8 +1,7 @@
-from recommender import SPDZTest
-
+from recommender.test import SPDZTest
+from recommender.io import InputFp
 
 # Global parameters
-sys.setrecursionlimit(100000)
 program.bit_length = 80
 program.security = 40
 sfix.set_precision(14, 28)
