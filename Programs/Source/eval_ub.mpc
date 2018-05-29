@@ -13,7 +13,7 @@ IO = InputFp(0)
 PREDICT = True
 NPREDICTIONS = 5000
 N_PARAMS = [100,200,300,400,500]
-M = 5000
+M = 3000
 K = 9
 F = 4
    

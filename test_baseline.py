@@ -42,7 +42,7 @@ def performance_ub():
     PREDICT = True
     NPREDICTIONS = 5000
     N_PARAMS = [100,200,300,400,500]
-    M = 5000
+    M = 3000
     K = 9
     F = 4
       
@@ -77,8 +77,8 @@ def debug():
     K = 9
     F = 4
     N = 100
-    M = 5000
-    NPREDICTIONS = 5000
+    M = 1000
+    NPREDICTIONS = 2500
     
     T = BaselineTest(1).small_data().mean_centered() 
     T.buildUBbaseline()
