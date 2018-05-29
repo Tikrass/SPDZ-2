@@ -22,8 +22,5 @@ class InputFp:
     def append_fp(self, *values): 
         self.input_fp += values
         
-    def append_fp_array(self, values, capacity=None):
-        if capacity == None:
-            self.append_fp(*values)
-        else:
-            self.append_fp_sparse_array(values, capacity)
+    def append_fp_array(self, values):
+        self.append_fp(*values)

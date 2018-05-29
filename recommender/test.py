@@ -114,25 +114,27 @@ class SPDZTest(Test):
         stop_timer(self.id+1)
         
         
-    def _prep_private_sparse_input(self, IO):
+    def _prep_private_sparse_input(self, cap):
         #########################
         # Preparing Private Input
         #########################
         
         print("Preparing sparse rating input.")
-        for u in range(n):
+        for u in range(self.n):
             input=[]
             tailpointer = 0
             for i in range(self.m):
-                if bitratings[i] != 0:
-                    input += [i,self.R[i]*(2**sfix.f), (self.R[i]**2)*(2**sfix.f)]
+                if self.B[u][i] != 0:
+                    r = int((self.R[u][i]*(2**sfix.f)))
+                    r2 = int(((self.R[u][i]**2)*(2**sfix.f)))
+                    input += [i,r,r2]
                     tailpointer += 1;
-            if tailpointer > self.cap:
+            if tailpointer > cap:
                 raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
-            for _ in range(tailpointer, capacity):
+            for _ in range(tailpointer, cap):
                 input += [0,0,0] # Padding
             input += [tailpointer]
-            IO.append_fp_array +=  input
+            self.IO.append_fp_array(input)
             
     def _private_sparse_input(self):
         #########################
@@ -171,9 +173,9 @@ class SPDZTest(Test):
         print_ln("n = %s\nm = %s, cap = %s", self.n, self.m, cap)
         print_ln("")
         
-        self.CF = SparseUBCosineCF(s.n,s.m, cap)
+        self.CF = SparseUBCosineCF(self.n,self.m, cap)
         
-        self._prep_sparse_input()
+        self._prep_private_sparse_input(cap)
         self._private_sparse_input()
         
         #########################

@@ -1,4 +1,4 @@
-from recommender import BaselineTest
+from recommender.test import BaselineTest
 
 def estimate_k():
     """
@@ -76,9 +76,9 @@ def debug():
     """        
     K = 9
     F = 4
-    N = 100
-    M = 1000
-    NPREDICTIONS = 2500
+    N = 50
+    M = 500
+    NPREDICTIONS = 500
     
     T = BaselineTest(1).small_data().mean_centered() 
     T.buildUBbaseline()

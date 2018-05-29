@@ -21,16 +21,16 @@ class sintSparseRatingArray(Array):
         return self.array[3*index]
     
     def _setkey(self, index, key):
-        self.array[2*index] = key
+        self.array[3*index] = key
     
     def _getr(self, index):
         return self.array[3*index+1]
     
     def _setr(self, index, r):
-        self.array[2*index+1] = r
+        self.array[3*index+1] = r
     
     def _setr2(self, index, r2):
-        self.array[2*index+2] = r2
+        self.array[3*index+2] = r2
         
     def _getr2(self, index):
         return self.array[3*index+2]
@@ -43,9 +43,9 @@ class sintSparseRatingArray(Array):
             k = self._getkey(i)
             comp = k == key
             r1 = self._getr(i)
-            accu1.write(match.if_else(r1, accu1.read()))
+            accu1.write(comp.if_else(r1+accu1.read(), accu1.read()))
             r2 = self._getr2(i)
-            accu2.write(match.if_else(r2, accu2.read()))
+            accu2.write(comp.if_else(r2+accu2.read(), accu2.read()))
         return accu1.read(), accu2.read() 
     
     def get_rating(self, key):
@@ -55,7 +55,7 @@ class sintSparseRatingArray(Array):
             k = self._getkey(i)
             comp = k == key
             r1 = self._getr(i)
-            accu1.write(match.if_else(r1, accu1.read()))
+            accu1.write(comp.if_else(r1+accu1.read(), accu1.read()))
         return accu1.read()
     
     def set_pair(self, key, rating, rating2):   
@@ -125,14 +125,14 @@ class sfixSparseRatingArray(Array):
         return sfix(r1), sfix(r2)
     
     def get_rating(self, key):
-        return self.array.get_rating(key)
+        return sfix(self.array.get_rating(key))
     
     def set_pair(self, key, rating, rating2):   
         self.array.set_pair(key, rating.v, rating2.v)
     
     @classmethod
     def get_raw_input_from(cls, player, length, capacity, address=None):
-        _, tp = SparseArray.get_raw_input_from(player, length, capacity, sint, address)
+        _, tp = sintSparseRatingArray.get_raw_input_from(player, length, capacity, sint, address)
         res = cls(length, capacity, address)
         res.writable(tp)
         return res, tp
@@ -151,6 +151,6 @@ class sfixSparseRowMatrix(Matrix):
         self.matrix.delete()
 
     def __getitem__(self, index):
-        return sfixSparseArray(self.columns,self.rowcap, self.matrix[index].address)
+        return sfixSparseRatingArray(self.columns,self.rowcap, self.matrix[index].address)
     
 

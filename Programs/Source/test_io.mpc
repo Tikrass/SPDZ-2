@@ -1,10 +1,11 @@
-from recommender import *
+from recommender.test import SPDZTest
+from recommender.io import InputFp
 from collaborative_filter import SparseUBCosineCF, UBCosineCF, IBCosineCF
 
 
 IO = InputFp(0)
 
-T = Test(1).eval_data(50,1000).mean_centered() 
+
 
 
 IO.append_fp(0)
@@ -15,9 +16,26 @@ b = sint.get_raw_input_from(0)
 print_ln("%s = 0 ?", a.reveal())
 print_ln("%s = -2 ?", b.reveal())
 
-T.prep_private_plain_input(IO)
+T = SPDZTest(1, IO).eval_data(50,1000).mean_centered()
+for u in range(10):
+    for i in range(10):
+        print T.R[u][i],
+    print ' ' 
 T.CF = UBCosineCF(T.n,T.m)
-T.private_plain_input(T.CF)
+T._prep_private_plain_input()
+T._private_plain_input()
+T.CF.print_ratings()
+
+T = SPDZTest(2, IO).small_data().mean_centered() 
+T.CF = SparseUBCosineCF(T.n,T.m,4)
+T._prep_private_sparse_input(4)
+T._private_sparse_input()
+T.CF.print_ratings()
+
+T = SPDZTest(3, IO).eval_data(n=50,m=1000).mean_centered() 
+T.CF = SparseUBCosineCF(T.n,T.m,500)
+T._prep_private_sparse_input(500)
+T._private_sparse_input()
 T.CF.print_ratings()
 
 IO.gen_input_fp()

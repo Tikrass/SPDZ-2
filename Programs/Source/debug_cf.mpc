@@ -12,15 +12,24 @@ IO = InputFp(0)
 K = 9
 F = 4
 N = 50
-M = 1000
+M = 500
 NPREDICTIONS = 500
-  
+
+#Small
 T = SPDZTest(1, IO).small_data().mean_centered() 
 T.buildUBplain()
 T.CF.print_ratings()
 T.CF.print_model()
 T.testPredictions([(2, 14)], 16)
 T.debugPredictions(2,14)
+T.CF.delete()
+
+T = SPDZTest(1, IO).small_data().mean_centered() 
+T.buildUBsparse(4)
+T.CF.print_ratings()
+T.CF.print_model()
+#T.testPredictions([(2, 14)], 16)
+#T.debugPredictions(2,14)
 T.CF.delete()
   
 T = SPDZTest(2,IO).small_data().mean_centered() 
@@ -30,7 +39,8 @@ T.CF.print_model()
 T.testPredictions([(2, 14)], 16)
 T.debugPredictions(2,14)
 T.CF.delete()
-   
+
+# Big
 T = SPDZTest(3,IO).eval_data(n=N, m=M).mean_centered() 
 T.buildUBplain()
 T.CF.print_ratings()
