@@ -1,6 +1,6 @@
 from math import sqrt, isnan
 
-class UBCF(object):
+class BaselineUBCF(object):
     def __init__(self, n, m, ratings, bitratings):
         self.S = [[0 for _ in range(n)] for _ in range(n)] # Similarity model
         self.n = n # Number of users
@@ -17,10 +17,31 @@ class UBCF(object):
                 print "{:5d} to {:5d}\r".format(u,v),
             
     def print_model(self):
-            for u in range(self.n):
-                for v in range(self.n):
-                    print "{: 5.3f}".format(self.S[u][v]),
-                print ""
+        print "S"
+        for u in range(min(self.n,10)):
+            for v in range(min(self.n,10)):
+                print "{: 1.5f}".format(self.S[u][v]),
+            print ""
+        
+                
+    def print_ratings(self):
+        print "R"
+        for u in range(min(self.n,10)):
+            for i in range(min(self.m,10)):
+                print "{: 1.5f}".format(self.R[u][i]),
+            print ""
+        
+        print "R2"    
+        for u in range(min(self.n,10)):
+            for i in range(min(self.m,10)):
+                print "{: 1.5f}".format(self.R[u][i]**2),
+            print ""
+        
+        print "B"    
+        for u in range(min(self.n,10)):
+            for i in range(min(self.m,10)):
+                print "{: 1.5f}".format(self.B[u][i]),
+            print ""
                 
     def cosine(self, u,v):
         d = 0
@@ -108,7 +129,7 @@ class UBCF(object):
             
 
 
-class IBCF(object):
+class BaselineIBCF(object):
     def __init__(self, n, m, ratings, bitratings):
         self.S = [[0 for _ in range(m)] for _ in range(m)] # Similarity model
         self.n = n # Number of users
@@ -125,10 +146,30 @@ class IBCF(object):
                 print "{:5d} to {:5d}\r".format(i,j),
             
     def print_model(self):
-            for i in range(self.m):
-                for j in range(self.m):
-                    print "{: 5.3f}".format(self.S[i][j]),
-                print ""
+        print "S"
+        for i in range(min(self.m,10)):
+            for j in range(min(self.m,10)):
+                print "{: 1.5f}".format(self.S[i][j]),
+            print ""
+                
+    def print_ratings(self):
+        print "R"
+        for u in range(min(self.n,10)):
+            for i in range(min(self.m,10)):
+                print "{: 1.5f}".format(self.R[u][i]),
+            print ""
+        
+        print "R2"    
+        for u in range(min(self.n,10)):
+            for i in range(min(self.m,10)):
+                print "{: 1.5f}".format(self.R[u][i]**2),
+            print ""
+        
+        print "B"    
+        for u in range(min(self.n,10)):
+            for i in range(min(self.m,10)):
+                print "{: 1.5f}".format(self.B[u][i]),
+            print ""
                 
     def cosine(self, i,j):
         d = 0

@@ -1,0 +1,51 @@
+from recommender.test import SPDZTest
+from recommender.io import InputFp
+
+# Global parameters
+program.bit_length = 80
+program.security = 40
+sfix.set_precision(14, 28)
+cfix.set_precision(14, 28)
+
+IO = InputFp(0)
+
+K = 9
+F = 4
+N = 100
+M = 2000
+NPREDICTIONS = 5000
+  
+T = SPDZTest(1, IO).small_data().mean_centered() 
+T.buildUBplain()
+T.CF.print_ratings()
+T.CF.print_model()
+T.testPredictions([(2, 14)], 16)
+T.debugPredictions(2,14)
+T.CF.delete()
+  
+T = SPDZTest(2,IO).small_data().mean_centered() 
+T.buildIBplain()
+T.CF.print_ratings()
+T.CF.print_model()
+T.testPredictions([(2, 14)], 16)
+T.debugPredictions(2,14)
+T.CF.delete()
+   
+T = SPDZTest(3,IO).eval_data(n=N, m=M).mean_centered() 
+T.buildUBplain()
+T.CF.print_ratings()
+T.CF.print_model()
+T.testPredictions([(K, F)], NPREDICTIONS)
+T.debugPredictions(K, F)
+T.CF.delete()
+        
+T = SPDZTest(4,IO).eval_data(n=N, m=M).mean_centered() 
+T.buildIBplain()
+T.CF.print_ratings()
+T.CF.print_model()
+T.testPredictions([(K, F)], NPREDICTIONS)
+T.debugPredictions(K, F)
+T.CF.delete()
+
+IO.gen_input_fp()
+ 

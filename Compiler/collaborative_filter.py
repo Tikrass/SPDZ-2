@@ -5,9 +5,9 @@ from config_mine import *
         
 class UserBasedModel(object):
     def __init__(self, n, m, ratings, bitratings):
-        self.S = sfixMatrix(n,m) # Similarity model
+        self.S = sfixMatrix(n,n) # Similarity model
         self.n = n # Number of users
-        self.m = n # Number of items
+        self.m = m # Number of items
         self.R = ratings # Rating matrix
         self.B = bitratings # Boolean ratings
     
@@ -25,12 +25,44 @@ class UserBasedModel(object):
                 self.S[v][u] = s_uv
             
     def print_model(self):
-            @for_range(self.n)
-            def user_loop(u):
-                @for_range(self.n)
-                def user_loop(v):
-                    print_str('%s ', self.S[u][v].reveal())
-                print_ln(' ')
+        """
+        Only for debugging
+        """
+        print_ln("S")
+        @for_range(min(self.n,10))
+        def user_loop(u):
+            @for_range(min(self.n,10))
+            def user_loop(v):
+                print_str('%s ', self.S[u][v].reveal())
+            print_ln(' ')
+    
+    def print_ratings(self):
+        """
+        Only for debugging
+        """
+        print_ln("R")
+        @for_range(min(self.n,10))
+        def user_loop(u):
+            @for_range(min(self.m,10))
+            def user_loop(i):
+                print_str('%s ', self.R[u][i].reveal())
+            print_ln(' ')
+        
+        print_ln("R2")    
+        @for_range(min(self.n,10))
+        def user_loop(u):
+            @for_range(min(self.m,10))
+            def user_loop(i):
+                print_str('%s ', self.R2[u][i].reveal())
+            print_ln(' ')
+        
+        print_ln("B")    
+        @for_range(min(self.n,10))
+        def user_loop(u):
+            @for_range(min(self.m,10))
+            def user_loop(i):
+                print_str('%s ', self.B[u][i].reveal())
+            print_ln(' ')
     
     @method_block
     def threshold_prediction(self, u, i, epsilon):
@@ -116,9 +148,9 @@ class UBCosineCF(UserBasedModel):
         cos = d.read()/(su.read() * sv.read()).sqrt() 
         
         if DEBUG >= INTERMEDIATE:
-            print_ln("dot: %s", dot.reveal())
-            print_ln("sumu: %s, sumv: %s", sumu.reveal(), sumv.reveal())
-            print_ln("cos: %s", cos.reveal())
+            print_ln("dot: %s", d.reveal())
+            print_ln("sumu: %s, sumv: %s", su.reveal(), sv.reveal())
+            print_ln("cos: %s", d.reveal())
             print_ln(" ")
             
         return cos
@@ -265,15 +297,44 @@ class IBCosineCF(object):
             print_ln(" ")
             
         return cos
-    
-    _build_model = lambda self, i, j :  self.cosine_sim(i,j)
             
     def print_model(self):
-        @for_range(self.m)
+        """
+        Only for debugging
+        """
+        @for_range(min(self.m, 10))
         def item_loop(i):
-            @for_range(self.m)
+            @for_range(min(self.m,10))
             def item_loop(j):
                 print_str('%s ', self.S[i][j])
+            print_ln(' ')
+            
+    def print_ratings(self):
+        """
+        Only for debugging
+        """
+        print_ln("R")
+        @for_range(min(self.n,10))
+        def user_loop(u):
+            @for_range(min(self.m,10))
+            def user_loop(i):
+                print_str('%s ', self.R[u][i].reveal())
+            print_ln(' ')
+        
+        print_ln("R2")    
+        @for_range(min(self.n,10))
+        def user_loop(u):
+            @for_range(min(self.m,10))
+            def user_loop(i):
+                print_str('%s ', self.R2[u][i].reveal())
+            print_ln(' ')
+        
+        print_ln("B")    
+        @for_range(min(self.n,10))
+        def user_loop(u):
+            @for_range(min(self.m,10))
+            def user_loop(i):
+                print_str('%s ', self.B[u][i].reveal())
             print_ln(' ')
     
     

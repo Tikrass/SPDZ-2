@@ -1,0 +1,28 @@
+from recommender import SPDZTest
+
+
+# Global parameters
+sys.setrecursionlimit(100000)
+program.bit_length = 80
+program.security = 40
+sfix.set_precision(14, 28)
+cfix.set_precision(14, 28)
+
+IO = InputFp(0)
+
+
+PREDICT = True
+NPREDICTIONS = 5000
+N_PARAMS = [100,200,300,400,500]
+K = 9
+F = 4
+   
+    
+for id,n in enumerate(N_PARAMS):
+    T = SPDZTest(id*10, IO).eval_data(n=n).mean_centered()
+    T.buildUBplain()
+    if PREDICT:
+        T.testPredictions([(K, F)], NPREDICTIONS)
+    T.CF.delete()
+    
+IO.gen_input_fp()
