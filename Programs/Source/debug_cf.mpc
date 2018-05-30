@@ -50,7 +50,7 @@ T.debugPredictions(K, F)
 T.CF.delete()
 
 T = SPDZTest(5,IO).eval_data(n=N, m=M).mean_centered() 
-T.buildUBsparse(50)
+T.buildUBsparse(22)
 T.CF.print_ratings()
 T.CF.print_model()
 # T.testPredictions([(K, F)], NPREDICTIONS)
