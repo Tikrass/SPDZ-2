@@ -109,6 +109,17 @@ def debug():
     T.debugPredictions(K, F)
     
 if __name__ == "__main__":
-    debug()
-        
+    import sys
+    for mode in sys.argv:
+        if mode == "DEBUG":
+            debug()
+        if mode == "ESTK":
+            estimate_k()
+        if mode == "ESTF":
+            estimate_f()
+        if mode == "UB":
+            performance_ub()
+        if mode == "IB":
+            performance_ib()
+            
         
