@@ -1,7 +1,7 @@
 from Compiler.library import *
 from Compiler.types import *
 
-class sintSparseRatingArray(Array):
+class SparseArray(Array):
     def __init__(self, length, capacity,value_type, address=None):
         self.length = length
         self.capacity = capacity
@@ -29,11 +29,12 @@ class sintSparseRatingArray(Array):
     def _setr(self, index, r):
         self.array[3*index+1] = r
     
-    def _setr2(self, index, r2):
-        self.array[3*index+2] = r2
-        
     def _getr2(self, index):
         return self.array[3*index+2]
+    
+    def _setr2(self, index, r2):
+        self.array[3*index+2] = r2
+
                           
     def get_pair(self, key):        
         accu1 = MemValue(sint(0))
@@ -88,11 +89,11 @@ class sintSparseRatingArray(Array):
         
     
 class SparseRowMatrix(Matrix):
-    def __init__(self, rows, columns, rowcap, value_type, addess=None):
+    def __init__(self, rows, columns, rowcap, value_type, address=None):
         self.rows = rows
         self.columns = columns
         self.rowcap = rowcap
-        self.matrix = Matrix(rows, columns*3, value_type)
+        self.matrix = Matrix(rows, rowcap * 3, sint, address)
     
     def delete(self):
         self.matrix.delete() 
@@ -100,13 +101,13 @@ class SparseRowMatrix(Matrix):
     def __getitem__(self, index):
         return SparseArray(self.columns,self.rowcap, self.value_type, self.matrix[index].address)
     
-class sfixSparseRatingArray(Array):
+class sfixSparseArray(Array):
     def __init__(self, length, capacity, address=None):
         self.length = length
         self.capacity = capacity
-        self.array = sintSparseRatingArray(length, capacity, sint, address)
-        self.value_type = sfix
+        self.array = SparseArray(length, capacity, sint, address)
         self.address = self.array.address
+        self.value_type = sfix
         
         
     def delete(self):
@@ -132,25 +133,25 @@ class sfixSparseRatingArray(Array):
     
     @classmethod
     def get_raw_input_from(cls, player, length, capacity, address=None):
-        _, tp = sintSparseRatingArray.get_raw_input_from(player, length, capacity, sint, address)
+        _, tp = SparseArray.get_raw_input_from(player, length, capacity, sint, address)
         res = cls(length, capacity, address)
         res.writable(tp)
         return res, tp
     
 
 class sfixSparseRowMatrix(Matrix):
-    def __init__(self, rows, columns, rowcap, addess=None):
+    def __init__(self, rows, columns, rowcap, address=None):
         self.rows = rows
         self.columns = columns
         self.rowcap = rowcap
         self.value_type = sfix
-        self.matrix = Matrix(rows, columns*3, sint)
+        self.matrix= Matrix(rows, rowcap * 3, sint, address)
         self.address = self.matrix.address
     
     def delete(self):
         self.matrix.delete()
 
     def __getitem__(self, index):
-        return sfixSparseRatingArray(self.columns,self.rowcap, self.matrix[index].address)
+        return sfixSparseArray(self.columns,self.rowcap, self.matrix[index].address)
     
 

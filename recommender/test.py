@@ -71,6 +71,16 @@ class Test():
         
         return self
     
+    def compute_rowcap(self):
+        rowcap = 0
+        for u in range(self.n):
+            count = 0
+            for i in range(self.m):
+                count += int(self.B[u][i])
+            if count >= rowcap:
+                rowcap = count
+        return rowcap
+    
     
 class SPDZTest(Test):
     def __init__(self, id, IO):
@@ -131,10 +141,12 @@ class SPDZTest(Test):
                     r2 = int(((self.R[u][i]**2)*(2**sfix.f)))
                     input += [i,r,r2]
                     tailpointer += 1;
-            if tailpointer > cap:
-                raise CompileError("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, capacity))
+                    if tailpointer >= cap:
+                        print("Tailpointer exceeds capacity: {} > {}!".format(tailpointer, cap))
+                        break;
+            
             for _ in range(tailpointer, cap):
-                input += [0,0,0] # Padding
+                input += [-1,0,0] # Padding
             input += [tailpointer]
             self.IO.append_fp_array(input)
             

@@ -160,7 +160,7 @@ class SparseUBCosineCF():
         self.R = sfixSparseRowMatrix(n,m,capacity) # Rating matrix  
         
     def load_ratings_from(self, user, player):
-        sfixSparseRatingArray.get_raw_input_from(player, self.n, self.capacity, address=self.R[user].address)
+        sfixSparseArray.get_raw_input_from(player, self.n, self.capacity, address=self.R[user].address)
     
     def print_ratings(self):
         """
