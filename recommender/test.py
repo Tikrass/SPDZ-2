@@ -61,8 +61,10 @@ class Test():
                 self.mean[u] += self.R[u][i]
                 count += self.B[u][i]
             if count == 0:
-                print u
-            self.mean[u] = self.mean[u]/count
+                print "No ratings for user ",u
+                self.mean[u] = 2.5
+            else:
+                self.mean[u] = self.mean[u]/count
             for i in range(self.m):
                 if self.B[u][i] == 1:
                     self.R[u][i] = self.R[u][i] - self.mean[u]

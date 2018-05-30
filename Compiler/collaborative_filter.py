@@ -358,7 +358,7 @@ class IBCosineCF(object):
             norm.write(norm.read() + self.S[i][j])
             end_if()
             end_if()
-        if_then(norm.read() == 0)
+        if_then(norm.read() != 0)
         prediction = rating.read() / norm.read()  
         else_then()
         prediction = cfix(0)
@@ -380,7 +380,6 @@ class IBCosineCF(object):
             delta = cfix(cint(2**(cfix.f-(round))))
             epsilon.write( epsilon.read() + cint(c > k) * delta)
             epsilon.write( epsilon.read() - cint(c < k) * delta)
-            #print_ln("e: %s, d: %s, c:%s", epsilon.read(), delta.read(), c)
         return self.threshold_prediction(u, i, epsilon.read())
         
     
