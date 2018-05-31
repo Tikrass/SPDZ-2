@@ -1,8 +1,8 @@
 from recommender.test import BaselineTest
 
-def estimate_k():
+def estimate_ubk():
     """
-    Tests to estimate parameter k
+    Tests to estimate parameter k in user-based filtering
     """
     K_PARAMS = range(1,31)
     F = 14
@@ -17,10 +17,37 @@ def estimate_k():
     T = BaselineTest(2).eval_data().mean_centered() # Maximum Size
     T.buildIBbaseline()
     T.testPredictions(knn_params, NPREDICTIONS)
-
-def estimate_f():
+    
+def estimate_ibk():
     """
-    Tests to estimate parameter f
+    Tests to estimate parameter k in item-based filtering
+    """
+    K_PARAMS = range(1,31)
+    F = 14
+    NPREDICTIONS = 5000
+    knn_params = zip(K_PARAMS, [F]*30)
+         
+             
+    T = BaselineTest(2).eval_data().mean_centered() # Maximum Size
+    T.buildIBbaseline()
+    T.testPredictions(knn_params, NPREDICTIONS)
+
+def estimate_ubf():
+    """
+    Tests to estimate parameter f in user-based filtering
+    """
+    K = 9
+    F_PARAMS = range(1,15)
+    NPREDICTIONS = 5000
+    knn_params = zip([K]*14, F_PARAMS)
+      
+    T = BaselineTest(10).eval_data().mean_centered() # Maximum Size
+    T.buildUBbaseline()
+    T.testPredictions(knn_params, NPREDICTIONS)
+    
+def estimate_ibf():
+    """
+    Tests to estimate parameter f in item-based filtering
     """
     K = 9
     F_PARAMS = range(1,15)
@@ -31,9 +58,6 @@ def estimate_f():
     T.buildUBbaseline()
     T.testPredictions(knn_params, NPREDICTIONS)
           
-    T = BaselineTest(20).eval_data().mean_centered() # Maximum Size
-    T.buildIBbaseline()
-    T.testPredictions(knn_params, NPREDICTIONS)
 
 def performance_ub():
     """
@@ -113,13 +137,17 @@ if __name__ == "__main__":
     for mode in sys.argv:
         if mode == "DEBUG":
             debug()
-        if mode == "ESTK":
-            estimate_k()
-        if mode == "ESTF":
-            estimate_f()
-        if mode == "UB":
+        if mode == "ESTUBK":
+            estimate_ubk()
+        if mode == "ESTUBF":
+            estimate_ubf()
+        if mode == "ESTIBK":
+            estimate_ibk()
+        if mode == "ESTIBF":
+            estimate_ubf()
+        if mode == "PERFUB":
             performance_ub()
-        if mode == "IB":
+        if mode == "PERFIB":
             performance_ib()
             
         
