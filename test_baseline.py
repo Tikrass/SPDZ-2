@@ -61,7 +61,7 @@ def performance_ib():
     PREDICT = True
     NPREDICTIONS = 5000
     N = 200
-    M_PARAMS = [2000,3000,4000,5000,6000]
+    M_PARAMS = [1000,1500,2000,2500,3000]
     K = 9
     F = 4  
     for id,m in enumerate(M_PARAMS):
