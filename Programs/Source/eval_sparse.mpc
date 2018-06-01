@@ -1,0 +1,25 @@
+from recommender.test import SPDZTest
+from recommender.io import InputFp
+
+# Global parameters
+program.bit_length = 80
+program.security = 40
+sfix.set_precision(14, 28)
+cfix.set_precision(14, 28)
+
+IO = InputFp(0)
+
+NPREDICTIONS = 5000
+N = 100
+M = 3000
+CAP_PARAMS = [10,15,20,25,30,35,40,45,50,55]
+
+T = SPDZTest(4,IO).eval_data(n=N, m=M).mean_centered() 
+T.buildUBplain()
+
+for id,cap in enumerate(CAP_PARAMS):
+    T = SPDZTest(id*10, IO).eval_data(n=N, m=M).mean_centered()
+    T.buildUBsparse(cap)
+    T.CF.delete()
+    
+IO.gen_input_fp()

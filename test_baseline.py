@@ -59,7 +59,7 @@ def estimate_ibf():
     T.testPredictions(knn_params, NPREDICTIONS)
           
 
-def performance_ub():
+def eval_ub():
     """
     measure UB CF performance
     """
@@ -78,7 +78,7 @@ def performance_ub():
             T.testPredictions([(K, F)], NPREDICTIONS)
 
 
-def performance_ib():
+def eval_ib():
     """
     measure IB CF performance
     """
@@ -145,9 +145,9 @@ if __name__ == "__main__":
             estimate_ibk()
         if mode == "ESTIBF":
             estimate_ubf()
-        if mode == "PERFUB":
+        if mode == "EVALUB":
             performance_ub()
-        if mode == "PERFIB":
+        if mode == "EVALIB":
             performance_ib()
             
         
