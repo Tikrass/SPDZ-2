@@ -49,7 +49,7 @@ def estimate_ibf():
     """
     Tests to estimate parameter f in item-based filtering
     """
-    K = 9
+    K = 11
     F_PARAMS = range(1,15)
     NPREDICTIONS = 5000
     knn_params = zip([K]*14, F_PARAMS)
@@ -86,8 +86,8 @@ def eval_ib():
     NPREDICTIONS = 5000
     N = 200
     M_PARAMS = [1000,1500,2000,2500,3000]
-    K = 9
-    F = 4  
+    K = 11
+    F = 14  
     for id,m in enumerate(M_PARAMS):
         T = BaselineTest(id*10+100).eval_data(n=N, m=m).mean_centered()
         T.buildIBbaseline()
@@ -124,7 +124,9 @@ def debug():
     T.CF.print_model()
     T.testPredictions([(K, F)], NPREDICTIONS)
     T.debugPredictions(K, F)
-          
+    
+    K = 11
+    F = 14
     T = BaselineTest(4).eval_data(n=N, m=M).mean_centered() 
     T.buildIBbaseline()
     T.CF.print_ratings()

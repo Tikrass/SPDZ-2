@@ -13,8 +13,8 @@ PREDICT = True
 NPREDICTIONS = 5000
 N = 200
 M_PARAMS = [1000,1500,2000,2500,3000]
-K = 9
-F = 4  
+K = 11
+F = 14  
 
 for id,m in enumerate(M_PARAMS):
     T = SPDZTest(id*10+100, IO).eval_data(n=N,m=m).mean_centered()
