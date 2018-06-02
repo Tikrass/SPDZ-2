@@ -148,8 +148,8 @@ if __name__ == "__main__":
         if mode == "ESTIBF":
             estimate_ubf()
         if mode == "EVALUB":
-            performance_ub()
+            eval_ub()
         if mode == "EVALIB":
-            performance_ib()
+            eval_ib()
             
         
