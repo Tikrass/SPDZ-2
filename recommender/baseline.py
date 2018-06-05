@@ -102,7 +102,7 @@ class BaselineUBCF(object):
         for e in range(2, f):
             c = 0
             for v in range(self.n):
-                if u != v and self.S[u][v] > epsilon:
+                if u != v and self.S[u][v] >= epsilon:
                     c += self.B[v][i]
             delta = 2**(-e)
             if c > k:
@@ -230,7 +230,7 @@ class BaselineIBCF(object):
         for e in range(2, f):
             c = 0
             for j in range(self.m):
-                if i != j and self.S[i][j] > epsilon:
+                if i != j and self.S[i][j] >= epsilon:
                     c += self.B[u][j]
             delta = 2**(-e)
             if c > k:

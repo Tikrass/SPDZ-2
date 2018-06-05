@@ -66,7 +66,8 @@ class UBCosineCF():
             print_ln("Building secure shared similarity model")
         @for_range(self.n)
         def users_loop1(u):
-            @for_range(u,self.n)
+            self.S[u][u] = sfix(1)
+            @for_range(u+1,self.n)
             def users_loop2(v):
                 if DEBUG >= VERBOSE_PROGRESS:
                     print_str("%s to %s     \r", u,v)
@@ -188,7 +189,8 @@ class SparseUBCosineCF():
             print_ln("Building secure shared similarity model")
         @for_range(self.n)
         def users_loop1(u):
-            @for_range(u,self.n)
+            self.S[u][u] = sfix(1.0)
+            @for_range(u+1,self.n)
             def users_loop2(v):
                 if DEBUG >= VERBOSE_PROGRESS:
                     print_str("%s to %s     \r", u,v)
@@ -299,7 +301,8 @@ class IBCosineCF(object):
             print_ln("Building secure shared similarity model")
         @for_range(self.m)
         def item_loop1(i):
-            @for_range(i,self.m)
+            self.S[i][i] = cfix(1.0)
+            @for_range(i+1,self.m)
             def item_loop2(j):
                 if DEBUG >= VERBOSE_PROGRESS:
                     print_str("%s to %s     \r", i,j)
