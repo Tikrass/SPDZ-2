@@ -1,11 +1,46 @@
+"""
+Module for neighbourhood-based secure collaborative filtering. It contains 
+three classes that are similiar in their structure. To build a collaborative
+similarity model do the follwing:
+
+1. Call the methods 
+    - "load_ratings_from",
+    - "load_ratings2_from" and 
+    - "load_bitratings_from" 
+    in the appropriate order, to load all private rating values into the memory.
+2. Use the method "build model" once to compute all similarities.
+3. Call the methods
+    - "threshold_prediction" with threshold epsilon, or
+    - "nn-prediction" with a number k
+    to get a prediction.
+4. Call the destructor "delete" to clean up the memory. 
+"""
+
 from Compiler.types import *
 from Compiler.library import *
 from Compiler.sparse_types import *
 from config_mine import *
         
 class UBCosineCF():
+    """
+    This class provides functionality for a user-based collaborative filter with
+    cosine similarity model.
     
+    R is a secure fixed-point Matrix. It stores the rating values r_ui. 
+    If r_ui is undefined the value is 0.
+    
+    R2 is a secure fixed-point Matrix. It stores the squares of rating values r_ui^2.
+    If r_ui^2 is undefined the value is 0.
+    
+    B is a secure integer Matrix. Its values b_ui encode whether r_ui is 
+    defined or not. 
+    
+    S is a secure fixed-point Matrix. It stores the computed cosine similarity values.
+    """
     def __init__(self, n, m):
+        """
+        Initialize a new instance with n users and m items.
+        """
         self.S = sfixMatrix(n,n) # Similarity model
         self.n = n # Number of users
         self.m = m # Number of items
@@ -14,6 +49,9 @@ class UBCosineCF():
         self.B = Matrix(n,m,sint) # Boolean ratings                
             
     def load_ratings_from(self, user, player):
+        """
+        Load the ratings r_ui for user from player and store them in R.
+        """
         ratings = self.R[user]
         @for_range(self.m)
         def items_loop1(i):
@@ -21,6 +59,9 @@ class UBCosineCF():
             ratings[i] = sfix(*r)
             
     def load_ratings2_from(self, user, player):
+        """
+        Load the squared ratings r_ui^2 for user from player and store them in R2.
+        """
         ratings2 = self.R2[user]
         @for_range(self.m)
         def items_loop(i):
@@ -28,6 +69,9 @@ class UBCosineCF():
             ratings2[i] = sfix(*r2)
         
     def load_bitratings_from(self, user, player):
+        """
+        Load the boolean values b_ui for user from player and store them in B.
+        """
         bitratings = self.B[user]
         @for_range(self.m)
         def items_loop2(i):
@@ -35,7 +79,8 @@ class UBCosineCF():
             
     def print_ratings(self):
         """
-        Only for debugging
+        Prints the first 10x10 elements of R, R2 and B. 
+        UNSECURE! Only use for for debugging purpose.
         """
         print_ln("R")
         @for_range(min(self.n,10))
@@ -62,21 +107,27 @@ class UBCosineCF():
             print_ln(' ')
     
     def build_model(self):
-        if DEBUG >= VERBOSE:
-            print_ln("Building secure shared similarity model")
+        """
+        Computes all similarity values for a cosine similarity model.
+        Remember to load all rating values in to the model first with the "load_*_from" methods.
+        """
+        print_ln("Building secure shared similarity model")
         @for_range(self.n)
         def users_loop1(u):
             self.S[u][u] = sfix(1)
             @for_range(u+1,self.n)
             def users_loop2(v):
-                if DEBUG >= VERBOSE_PROGRESS:
-                    print_str("%s to %s     \r", u,v)
+                print_str("%s to %s     \r", u,v)
                 s_uv = self.cosine(u, v)
                 self.S[u][v] = s_uv
                 self.S[v][u] = s_uv
             
     @method_block
     def cosine(self, u,v):
+        """
+        Computes the cosine similarity between user u and v.
+        If the cosine similarity is undefined it returns sfix(0).
+        """
         d = MemValue(sint(0))
         su = MemValue(sint(0))
         sv = MemValue(sint(0))
@@ -96,7 +147,8 @@ class UBCosineCF():
     
     def print_model(self):
         """
-        Only for debugging
+        Prints the first 10x10 elements of S. 
+        UNSECURE! Only use for for debugging purpose.
         """
         print_ln("S")
         @for_range(min(self.n,10))
@@ -108,9 +160,10 @@ class UBCosineCF():
             
     @method_block
     def threshold_prediction(self, u, i, epsilon):
-        if DEBUG >= INTERMEDIATE:
-            print_ln("Predicting rating:\n user %s, item %s", u, i)
-        
+        """
+        Predict a rating from user u to item i based on all peers v that have
+        s_uv >= epsilon.
+        """
         r = MemValue(sint(0))
         n = MemValue(sint(0))
         
@@ -130,6 +183,9 @@ class UBCosineCF():
     
     @method_block
     def nn_prediction(self, u, i, k, f):
+        """
+        Predict a rating from user u to item i based on the k most similar peers.
+        """
         epsilon = sfix.MemValue(sfix(sint(2**(sfix.f-1)))) # 0.5
         
         @for_range(2,f)
@@ -147,13 +203,28 @@ class UBCosineCF():
         return self.threshold_prediction(u, i, epsilon.read())
             
     def delete(self):
+        """
+        Destructor
+        """
         self.S.delete()
         self.R.delete()
         self.R2.delete()
         self.B.delete()
 
 class SparseUBCosineCF():
+    """
+    This class provides functionality for a user-based collaborative filter with
+    cosine similarity model.
+    
+    R is a sparse fixed-point Matrix that stores the ratings and their squared values
+    in a compressed format. 
+    
+    S is a secure fixed-point Matrix. It stores the computed cosine similarity values.
+    """
     def __init__(self, n, m, capacity):
+        """
+        Initialize a new instance with n users and m items and matrix capacity.
+        """
         self.S = sfixMatrix(n,n) # Similarity model
         self.n = n # Number of users
         self.m = m # Number of items
@@ -161,11 +232,15 @@ class SparseUBCosineCF():
         self.R = sfixSparseRowMatrix(n,m,capacity) # Rating matrix  
         
     def load_ratings_from(self, user, player):
+        """
+        Load the sparse rating vector for user from player and store it in R.
+        """
         sfixSparseArray.get_raw_input_from(player, self.n, self.capacity, address=self.R[user].address)
     
     def print_ratings(self):
         """
-        Only for debugging
+        Prints the first 10x10 elements of R. 
+        UNSECURE! Only use for for debugging purpose.
         """
         print_ln("R")
         @for_range(min(self.n,10))
@@ -185,15 +260,17 @@ class SparseUBCosineCF():
             print_ln(' ')
     
     def build_model(self):
-        if DEBUG >= VERBOSE:
-            print_ln("Building secure shared similarity model")
+        """
+        Computes all similarity values for a cosine similarity model.
+        Remember to load all rating values in to the model first with the "load_ratings_from" method.
+        """
+        print_ln("Building secure shared similarity model")
         @for_range(self.n)
         def users_loop1(u):
             self.S[u][u] = sfix(1.0)
             @for_range(u+1,self.n)
             def users_loop2(v):
-                if DEBUG >= VERBOSE_PROGRESS:
-                    print_str("%s to %s     \r", u,v)
+                print_str("%s to %s     \r", u,v)
                 s_uv = self.cosine(u, v)
                 self.S[u][v] = s_uv
                 self.S[v][u] = s_uv
@@ -201,6 +278,10 @@ class SparseUBCosineCF():
     
     @method_block
     def cosine(self, u,v):
+        """
+        Computes the cosine similarity between user u and v.
+        If the cosine similarity is undefined it returns sfix(0).
+        """
         d = MemValue(sint(0))
         su = MemValue(sint(0))
         sv = MemValue(sint(0))
@@ -224,7 +305,8 @@ class SparseUBCosineCF():
     
     def print_model(self):
         """
-        Only for debugging
+        Prints the first 10x10 elements of S. 
+        UNSECURE! Only use for for debugging purpose.
         """
         print_ln("S")
         @for_range(min(self.n,10))
@@ -235,10 +317,31 @@ class SparseUBCosineCF():
             print_ln(' ')
             
     def delete(self):
+        """
+        Destructor
+        """
         self.S.delete()
         self.R.delete()
 
 class IBCosineCF(object):
+    """
+    This class provides functionality for a item-based collaborative filter with
+    cosine similarity model.
+    
+    R is a secure fixed-point Matrix. It stores the rating values r_ui. 
+    If r_ui is undefined the value is 0.
+    
+    R2 is a secure fixed-point Matrix. It stores the squares of rating values r_ui^2.
+    If r_ui^2 is undefined the value is 0.
+    
+    B is a secure integer Matrix. Its values b_ui encode whether r_ui is 
+    defined or not. 
+    
+    S is a clear fixed-point Matrix. It stores the computed cosine similarity values. 
+    
+    It is probalbly safe to reveal the similarity values because they contain no more 
+    information about the users. 
+    """
     def __init__(self, n, m):
         self.S = cfixMatrix(m,m) # Similarity model
         self.R = sfixMatrix(n,m)
@@ -249,6 +352,9 @@ class IBCosineCF(object):
 
         
     def load_ratings_from(self, user, player):
+        """
+        Load the ratings r_ui for user from player and store them in R.
+        """
         ratings = self.R[user]
         @for_range(self.m)
         def items_loop(i):
@@ -256,6 +362,9 @@ class IBCosineCF(object):
             ratings[i] = sfix(*r)
             
     def load_ratings2_from(self, user, player):
+        """
+        Load the squared ratings r_ui^2 for user from player and store them in R2.
+        """
         ratings2 = self.R2[user]
         @for_range(self.m)
         def items_loop(i):
@@ -263,6 +372,9 @@ class IBCosineCF(object):
             ratings2[i] = sfix(*r2)
         
     def load_bitratings_from(self, user, player):
+        """
+        Load the boolean values b_ui for user from player and store them in B.
+        """
         bitratings = self.B[user]
         @for_range(self.m)
         def items_loop2(i):
@@ -270,7 +382,8 @@ class IBCosineCF(object):
             
     def print_ratings(self):
         """
-        Only for debugging
+        Prints the first 10x10 elements of R, R2 and B. 
+        UNSECURE! Only use for for debugging purpose.
         """
         print_ln("R")
         @for_range(min(self.n,10))
@@ -297,21 +410,29 @@ class IBCosineCF(object):
             print_ln(' ')
         
     def build_model(self):
-        if DEBUG >= VERBOSE:
-            print_ln("Building secure shared similarity model")
+        """
+        Computes all similarity values for a cosine similarity model.
+        Remember to load all rating values in to the model first with the "load_*_from" methods.
+        
+        The similarity values are opened because it deanonymization is probably not possible.
+        """
+        print_ln("Building secure shared similarity model")
         @for_range(self.m)
         def item_loop1(i):
             self.S[i][i] = cfix(1.0)
             @for_range(i+1,self.m)
             def item_loop2(j):
-                if DEBUG >= VERBOSE_PROGRESS:
-                    print_str("%s to %s     \r", i,j)
-                s_ij = self.cosine(i,j)
+                print_str("%s to %s     \r", i,j)
+                s_ij = self.cosine(i,j).reveal()
                 self.S[i][j] = s_ij
                 self.S[j][i] = s_ij
             
     @method_block
     def cosine(self, i,j):
+        """
+        Computes the cosine similarity between items i and j.
+        If the cosine similarity is undefined it returns sfix(0).
+        """
         d = MemValue(sint(0))
         si = MemValue(sint(0))
         sj = MemValue(sint(0))
@@ -327,11 +448,11 @@ class IBCosineCF(object):
         
         not_zero = sint(norm != 0)
         cos = not_zero.if_else(d/norm, sfix(0))             
-        return cos.reveal()
+        return cos
             
     def print_model(self):
         """
-        Only for debugging
+        Prints the first 10x10 elements of S. 
         """
         print_ln("S")
         @for_range(min(self.m, 10))
@@ -346,9 +467,13 @@ class IBCosineCF(object):
     
     @method_block
     def threshold_prediction(self, u, i, epsilon):
-        if DEBUG >= INTERMEDIATE:
-            print_ln("Predicting rating:\n user %s, item %s", u, j)
+        """
+        Predict a rating from user u to item i based on all peers j that have
+        s_ij >= epsilon.
         
+        UNSECURE! This algorithm reveals rating values. Actually it should run locally, 
+        which however is not yet possible with SPDZ. 
+        """
         rating = cfix.MemValue(cfix(0))
         norm = cfix.MemValue(cfix(0))
         
@@ -370,6 +495,12 @@ class IBCosineCF(object):
     
     @method_block
     def nn_prediction(self, u, i, k, f):
+        """
+        Predict a rating from user u to item i based on the k most similar peers.
+        
+        UNSECURE! This algorithm reveals rating values. Actually it should run locally, 
+        which however is not yet possible with SPDZ. 
+        """
         epsilon = cfix.MemValue(cfix(cint(2**(cfix.f-1)))) # 0.5
         
         @for_range(2,f)
@@ -387,6 +518,9 @@ class IBCosineCF(object):
         
     
     def delete(self):
+        """
+        Destructor
+        """
         self.S.delete()
         self.R.delete()
         self.R2.delete()

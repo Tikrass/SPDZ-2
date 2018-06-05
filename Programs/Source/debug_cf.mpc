@@ -28,8 +28,6 @@ T = SPDZTest(2, IO).small_data().mean_centered()
 T.buildUBsparse(T.compute_rowcap())
 T.CF.print_ratings()
 T.CF.print_model()
-#T.testPredictions([(2, 14)], 16)
-#T.debugPredictions(2,14)
 T.CF.delete()
   
 T = SPDZTest(3,IO).small_data().mean_centered() 
@@ -53,8 +51,6 @@ T = SPDZTest(5,IO).eval_data(n=N, m=M).mean_centered()
 T.buildUBsparse(10)
 T.CF.print_ratings()
 T.CF.print_model()
-# T.testPredictions([(K, F)], NPREDICTIONS)
-# T.debugPredictions(K, F)
 T.CF.delete()
 
 K = 11

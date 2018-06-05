@@ -17,11 +17,12 @@ import random as random2
 random = random2.Random()
 random.seed()
 
-# Global parameters
+# Change python recursion limit for large code.
 sys.setrecursionlimit(1000000)
 
-
+# Folder to the Movie Lens dataset.
 folder = "Prep-Data/ml-latest-small"
+
 class Test():
     def __init__(self, id):
         self.id = id
