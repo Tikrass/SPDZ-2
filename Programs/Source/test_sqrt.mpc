@@ -8,7 +8,7 @@ def test(actual, expected):
         actual = actual.reveal()
     print_ln('expected %s, got %s', expected, actual)
 
-program.bit_length = 80
+program.bit_length = 84
 program.security = 40
 sfix.set_precision(14, 28)
 cfix.set_precision(14, 28)

@@ -1,0 +1,64 @@
+from recommender.collaborative_filter import UBCosineCF, IBCosineCF, SparseUBCosineCF
+
+# Global parameters
+program.bit_length = 84
+program.security = 40
+sfix.set_precision(14, 28)
+cfix.set_precision(14, 28)
+
+n = 5
+m = 5
+k = 2
+f = 14
+
+CF = UBCosineCF(n,m) # or IBCosineCF
+
+for u in range(n):
+    CF.load_ratings_from(u, u)
+    
+for u in range(n):
+    CF.load_ratings2_from(u, u)
+
+for u in range(n):
+    CF.load_bitratings_from(u, u)
+    
+CF.build_model()    
+
+@for_range(n)
+def user_loop(u):
+    @for_range(m)
+    def item_loop(i):
+        prediction = CF.nn_prediction(u,i, k, f)
+        print_str("%s ", prediction.reveal())
+    print_ln(" ")
+    
+    
+# prepare private input with mock data
+from recommender.io import InputFp
+R = [[0.0,1.0,3.0,4.0,0.0],
+     [2.0,1.0,0.0,4.0,0.0],
+     [0.0,2.0,3.0,0.0,3.0],
+     [5.0,0.0,2.0,1.0,0.0],
+     [4.0,3.0,0.0,1.0,4.0]]
+B = [[0,1,1,1,0],
+     [1,1,0,1,0],
+     [0,1,1,0,1],
+     [1,0,1,1,0],
+     [1,1,0,1,1]]
+
+IO = [InputFp(u) for u in range(n)]
+
+for u in range(n):
+  IO[u].append_fp_array([int(r*(2**sfix.f)) for r in R[u]])
+
+for u in range(n):
+  IO[u].append_fp_array([int((r**2)*(2**sfix.f)) for r in R[u]])
+
+for u in range(n):
+  IO[u].append_fp_array(B[u])
+
+for io in IO:
+  io.gen_input_fp()
+    
+    
+    

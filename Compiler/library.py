@@ -1394,7 +1394,7 @@ def sfix_sqrt(x, k, f, kappa):
         h = TruncPr(h*r, 2*k, f, kappa)
         gh = TruncPr(g * h, 2*k, f, kappa)
     r = r = int(1.5*2**f) - gh
-    h = TruncPr(h * (1+r), k, f, kappa)
+    h = TruncPr(h * (1+r), 2*k, f, kappa)
     h = 2 * h # approx. 1/sqrt (x)
     # End of Goldschmidt
     H = int(3 * 2**(3*f)) - h * h * x

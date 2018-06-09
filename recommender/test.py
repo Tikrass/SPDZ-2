@@ -1,10 +1,11 @@
 from recommender.baseline import BaselineUBCF, BaselineIBCF
 from recommender.dataset import Dataset
 from recommender.io import InputFp
+from recommender.collaborative_filter import UBCosineCF, IBCosineCF, SparseUBCosineCF
 
 from Compiler.types import sfix
 from Compiler.library import *
-from Compiler.collaborative_filter import UBCosineCF, IBCosineCF, SparseUBCosineCF
+
 
 import timeit
 import time
@@ -300,10 +301,10 @@ class BaselineTest(Test):
             raise RuntimeError("Call another test to build model first!")
         
         print "PREDICTIONS"
-        print "{:4} {:4}  {:8} {:8} {:8}".format("k","f", "mae", "rmse", "tpred")
+        print "{:4} {:4}  {:8} {:8} {:8} {:8}".format("k","f", "mae", "rmse", "var", "tpred")
         
         for (k, f) in knn_params:
-            
+            stats = []
             start_time = time.clock()
             mae = 0
             rmse = 0
@@ -315,12 +316,15 @@ class BaselineTest(Test):
                     error = abs(prediction + self.mean[u] - r)
                     mae += error
                     rmse += (error)**2
+                    stats.append(error)
             
             mae = mae / sampsize
             rmse = sqrt(rmse / sampsize)
             end_time = time.clock()
             tpred = end_time-start_time
-            print "{:<4d} {:<4d}  {:8.6f} {:8.6f} {:8.4f}".format(k,f, mae, rmse, tpred)
+            from numpy import var
+            v = var(stats)
+            print "{:<4d} {:<4d}  {:8.6f} {:8.6f} {:8.6f} {:8.4f}".format(k,f, mae, rmse, v, tpred)
 
     def debugPredictions(self, k, f):
         if self.CF == None:
