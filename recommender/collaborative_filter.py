@@ -1,3 +1,7 @@
+# (C) 2018 Thibaud Kehler. 
+# MIT Licence
+# see https://opensource.org/licenses/MIT
+
 """
 Module for neighbourhood-based secure collaborative filtering. It contains 
 three classes that are similiar in their structure. To build a collaborative

@@ -1,3 +1,7 @@
+# (C) 2018 Thibaud Kehler. 
+# MIT Licence
+# see https://opensource.org/licenses/MIT
+
 import subprocess
 
 

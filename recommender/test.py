@@ -1,3 +1,7 @@
+# (C) 2018 Thibaud Kehler. 
+# MIT Licence
+# see https://opensource.org/licenses/MIT
+
 """
 Test suit to measure the performance and accuracy of the privacy-preserving
 collaborative filter. Use the class "SPDZTest" to compile a test for SPDZ. 
