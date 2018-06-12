@@ -2,6 +2,9 @@ import csv
 from scipy.sparse import lil_matrix
 
 class Dataset:
+    """
+    Connector for MovieLens datasets. 
+    """
     def __init__(self, folder, separator=',', quotechar='"', ratings_file_name="ratings.csv", movies_file_name="movies.csv"):
         self.ratings_file_name=ratings_file_name
         self.movies_file_name=movies_file_name
@@ -22,6 +25,10 @@ class Dataset:
         self.m_max = len(self.mid_to_i)
     
     def __canonicalize_movieids(self):
+        """
+        Enumerates the movie IDs (mid) canonically to item IDs (i) and builds a dictionary in both directions
+        mid -> i, i -> mid
+        """
         counter = 0
         i_to_mid = []
         mid_to_i = {}
@@ -37,6 +44,10 @@ class Dataset:
         return i_to_mid, mid_to_i   
     
     def __list_ratings(self):
+        """
+        Produces a list of all ratings.
+        [(u1,i1,r1), (u2,i2,r2), ...]
+        """
         ratings = []
         with open(self.ratings_file_path, 'r') as ratings_file:
             reader = csv.reader(ratings_file, delimiter=self.delimiter, quotechar=self.quotechar)
@@ -53,6 +64,9 @@ class Dataset:
         return ratings
     
     def __count_userids(self):
+        """
+        Counts the number of users n.
+        """
         highest_id=0;
         for (u,i,r) in self.rating_list:
             if u > highest_id:
@@ -63,6 +77,13 @@ class Dataset:
     
     
     def get(self, n=None, m=None):
+        """
+        Returns 
+        1. a rating matrix R, where all undefined ratings are 0.
+        2. a matrix of boolean values 1,0 which indicate whether a rating exists.
+        3. the ratings in list representation.
+        4. the dimension of the rating matrix n x m.
+        """
         if n == None or n >= self.n_max:
             n = self.n_max
         

@@ -1364,6 +1364,9 @@ def NormSQ(x, k, f):
     return part_reciprocal, acc_v, acc_m, acc_w
 
 def LinAppSQ(b, k, f, kappa=None):
+    """
+    Compute a linear approximation of the square root.
+    """
     alpha = cint(int(-0.8099868542 * 2**k))
     beta = cint(int(1.787727479 * 2**(2*k)))
     c, v, m_0, W = NormSQ(b, k, f)

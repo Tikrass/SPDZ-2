@@ -1,3 +1,25 @@
+"""
+Test suit to measure the performance and accuracy of the privacy-preserving
+collaborative filter. Use the class "SPDZTest" to compile a test for SPDZ. 
+Call the methods from Python directly to test the baseline. 
+
+The initialization follows a Build Pattern. Make sure to pass every instance a unique ID.
+
+For a small 5x5 test dataset call "small_data()" after the constructor, e.g.
+
+SPDZTest(ID).small_data()
+
+For the MovieLens dataset call "eval_data(n,m)" with the dimensions of the rating matrix, e.g.
+
+SPDZTest(ID).eval_data(600,3000)
+
+To apply do mean-centering append ".mean_centered()".
+
+SPDZTest(ID).eval_data(600,3000).mean_centered()
+
+Call the test methods on the returned object.
+"""
+
 from recommender.baseline import BaselineUBCF, BaselineIBCF
 from recommender.dataset import Dataset
 from recommender.io import InputFp
@@ -18,18 +40,24 @@ import random as random2
 random = random2.Random()
 random.seed()
 
-# Change python recursion limit for large code.
+# Enlarge python recursion limit for large code.
 sys.setrecursionlimit(1000000)
 
 # Folder to the Movie Lens dataset.
 folder = "Prep-Data/ml-latest-small"
 
 class Test():
+    """
+    Abstract test class. Do not use instantiate this class. Instead use SPDZTest or BaselineTest.
+    """
     def __init__(self, id):
         self.id = id
 
     # DATA
     def small_data(self):
+        """
+        Small artificial 5x5 dataset.
+        """
         self.n = 5
         self.m = 5
         self.R =[[0.0,1.0,3.0,4.0,0.0],
@@ -51,11 +79,19 @@ class Test():
         return self
     
     def eval_data(self, n=None, m=None): 
+        """
+        Loads the MovieLens Dataset from file in the specified dimension n x m.
+        """
         D = Dataset(folder)
         self.R, self.B, self.Rlist, self.n, self.m = D.get(n,m)
         return self
     
     def mean_centered(self):
+        """
+        Use this method only after you loaded a dataset with one of the other methods!
+        
+        Transforms the dataset to a mean-centered version.
+        """
         self.mean = [0 for _ in range(self.n)]
         for u in range(self.n):
             count = 0
@@ -74,6 +110,9 @@ class Test():
         return self
     
     def compute_rowcap(self):
+        """
+        Decduces an optimal row capacity c for the sparse representation.
+        """
         rowcap = 0
         for u in range(self.n):
             count = 0
@@ -85,15 +124,26 @@ class Test():
     
     
 class SPDZTest(Test):
+    """
+    This class builds an SPDZ test when called in an MPC Program. Do not use it in pure Python.
+    """
+    
     def __init__(self, id, IO):
+        """
+        Create a new Test instance.
+        
+        id: unique identifier for the timer objects.
+        IO: gen_input_fp connector, which should be used for private input.
+        """
         Test.__init__(self, id)
         self.IO = IO
 
     
     def _prep_private_plain_input(self):
-        #########################
-        # Preparing Private Input
-        #########################
+        """
+        Prepare the private input of the dataset for a plain representation.
+        (Compile time)
+        """
         print("Preparing rating input.")
         for u in range(self.n):
             self.IO.append_fp_array([int(r* (2**sfix.f)) for r in self.R[u]])
@@ -107,6 +157,9 @@ class SPDZTest(Test):
             self.IO.append_fp_array(self.B[u])
     
     def _private_plain_input(self):
+        """
+        Compiles to bytecode that loads a plain rating matrix.
+        """
         #########################
         # Reading Private Input
         #########################
@@ -129,9 +182,10 @@ class SPDZTest(Test):
         
         
     def _prep_private_sparse_input(self, cap):
-        #########################
-        # Preparing Private Input
-        #########################
+        """
+        Prepare the private input of the dataset for a sparse representation.
+        (Compile time)
+        """
         
         print("Preparing sparse rating input.")
         for u in range(self.n):
@@ -153,9 +207,9 @@ class SPDZTest(Test):
             self.IO.append_fp_array(input)
             
     def _private_sparse_input(self):
-        #########################
-        # Reading Private Input
-        #########################
+        """
+        Compiles to bytecode that loads a sparse rating matrix.
+        """
         
         start_timer(self.id+1)
 
@@ -166,6 +220,9 @@ class SPDZTest(Test):
         stop_timer(self.id+1)
         
     def buildUBplain(self):
+        """
+        Compiles to bytecode that reads a plain rating matrix and and builds a user-based similarity model.
+        """
         print_ln("############################\nNEW TEST RUN")
         print_ln("User-based CF")
         print_ln("n = %s\nm = %s", self.n, self.m)
@@ -184,6 +241,9 @@ class SPDZTest(Test):
         stop_timer(self.id+2)
 
     def buildUBsparse(self, cap):
+        """
+        Compiles to bytecode that reads a sparse rating matrix and and builds a user-based similarity model.
+        """
         print_ln("############################\nNEW TEST RUN")
         print_ln("Sparse User-based CF")
         print_ln("n = %s\nm = %s, cap = %s", self.n, self.m, cap)
@@ -201,7 +261,10 @@ class SPDZTest(Test):
         self.CF.build_model()
         stop_timer(self.id+2)
     
-    def buildIBplain(self):   
+    def buildIBplain(self):  
+        """
+        Compiles to bytecode that reads a plain rating matrix and and builds an item-based similarity model.
+        """
         print_ln("############################\nNEW TEST RUN")
         print_ln("Item-based CF")
         print_ln("n = %s\nm = %s", self.n, self.m)
@@ -220,6 +283,15 @@ class SPDZTest(Test):
         stop_timer(self.id+2)
 
     def testPredictions(self, knn_params, sampsize): 
+        """
+        Compiles to bytecode to evaluate the accuracy.
+        Samples a specified number of ratings.
+        For each knn-parameter combination sampsize predictions are made. Then it computes the MAE and RMSE.
+        
+        sampsize: sampling size, e.g. 5000
+        knn_params: array of parameter pairs (k,f') , e.g.
+        [(5,14), (6,14)]
+        """
         if self.CF == None:
             raise RuntimeError("Call another test to build model first!")
         
@@ -253,6 +325,9 @@ class SPDZTest(Test):
             timer_count += 1
         
     def debugPredictions(self, k, f):
+        """
+        Prints the first 10x10 predictions out for debugging purposes.
+        """
         if self.CF == None:
             raise RuntimeError("Call another test to build model first!")
         print_ln( "PREDICTIONS")
@@ -267,7 +342,13 @@ class SPDZTest(Test):
             
 
 class BaselineTest(Test):
+    """
+    This class tests the baseline implementation. Do not call it from MPC, neither compile it with SPDZ.
+    """
     def buildUBbaseline(self):
+        """
+        Builds a user-based similarity model and measures the time.
+        """
         print("############################\nNEW TEST RUN")
         print("User-based baseline CF")
         print("n = {}\nm = {}".format( self.n, self.m))
@@ -284,6 +365,9 @@ class BaselineTest(Test):
 
     
     def buildIBbaseline(self):
+        """
+        Builds an item-based similarity model and measures the time.
+        """
         print("############################\nNEW TEST RUN")
         print("Item-based baseline CF")
         print("n = {}\nm = {}".format( self.n, self.m))
@@ -297,6 +381,16 @@ class BaselineTest(Test):
         print "{:<4d} {:<4d} {:8.4f}".format(self.n,self.m, tmodel)
     
     def testPredictions(self, knn_params, sampsize): 
+        """
+        Evaluate the accuracy of the baseline
+        Samples a specified number of ratings.
+        For each knn-parameter combination sampsize predictions are made. Then it computes the MAE and RMSE.
+        
+        sampsize: sampling size, e.g. 5000
+        knn_params: array of parameter pairs (k,f') , e.g.
+        [(5,14), (6,14)]
+        """
+        
         if self.CF == None:
             raise RuntimeError("Call another test to build model first!")
         
@@ -327,6 +421,9 @@ class BaselineTest(Test):
             print "{:<4d} {:<4d}  {:8.6f} {:8.6f} {:8.6f} {:8.4f}".format(k,f, mae, rmse, v, tpred)
 
     def debugPredictions(self, k, f):
+        """
+        Prints the first 10x10 predictions out for debugging purposes.
+        """
         if self.CF == None:
             raise RuntimeError("Call another test to build model first!")
         print "PREDICTIONS"
