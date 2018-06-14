@@ -4,22 +4,22 @@
 
 """
 Test suit to measure the performance and accuracy of the privacy-preserving
-collaborative filter. Use the class "SPDZTest" to compile a test for SPDZ. 
+collaborative filter. Use the class ``SPDZTest`` to compile a test for SPDZ. 
 Call the methods from Python directly to test the baseline. 
 
-The initialization follows a Build Pattern. Make sure to pass every instance a unique ID.
+The initialization follows a build pattern. Make sure to pass every instance a unique ``ID``.
 
-For a small 5x5 test dataset call "small_data()" after the constructor, e.g.
+For a small 5x5 test dataset call "small_data()" after the constructor, e.g.::
 
-SPDZTest(ID).small_data()
+    SPDZTest(ID).small_data()
 
-For the MovieLens dataset call "eval_data(n,m)" with the dimensions of the rating matrix, e.g.
+For the MovieLens dataset call "eval_data(n,m)" with the dimensions of the rating matrix, e.g.::
 
-SPDZTest(ID).eval_data(600,3000)
+    SPDZTest(ID).eval_data(600,3000)
 
-To apply do mean-centering append ".mean_centered()".
+To apply do mean-centering append ".mean_centered()".::
 
-SPDZTest(ID).eval_data(600,3000).mean_centered()
+    SPDZTest(ID).eval_data(600,3000).mean_centered()
 
 Call the test methods on the returned object.
 """
@@ -168,7 +168,7 @@ class SPDZTest(Test):
         # Reading Private Input
         #########################
         
-        start_timer(self.id+1)
+        start_timer(self.id*10+1)
 
         print_ln("Loading private input.")
         @for_range(self.n)
@@ -215,13 +215,13 @@ class SPDZTest(Test):
         Compiles to bytecode that loads a sparse rating matrix.
         """
         
-        start_timer(self.id+1)
+        start_timer(self.id*10+1)
 
         print_ln("Loading private sparse input.")
         @for_range(self.n)
         def user_loop1(u):
             self.CF.load_ratings_from(u, 0)
-        stop_timer(self.id+1)
+        stop_timer(self.id*10+1)
         
     def buildUBplain(self):
         """
@@ -240,9 +240,9 @@ class SPDZTest(Test):
         #########################
         # Building Model
         #########################
-        start_timer(self.id+2)
+        start_timer(self.id*10+2)
         self.CF.build_model()
-        stop_timer(self.id+2)
+        stop_timer(self.id*10+2)
 
     def buildUBsparse(self, cap):
         """
@@ -261,9 +261,9 @@ class SPDZTest(Test):
         #########################
         # Building Model
         #########################
-        start_timer(self.id+2)
+        start_timer(self.id*10+2)
         self.CF.build_model()
-        stop_timer(self.id+2)
+        stop_timer(self.id*10+2)
     
     def buildIBplain(self):  
         """
@@ -282,9 +282,9 @@ class SPDZTest(Test):
         #########################
         # Building Model
         #########################
-        start_timer(self.id+2)
+        start_timer(self.id*10+2)
         self.CF.build_model()
-        stop_timer(self.id+2)
+        stop_timer(self.id*10+2)
 
     def testPredictions(self, knn_params, sampsize): 
         """

@@ -7,17 +7,20 @@ Module for neighbourhood-based secure collaborative filtering. It contains
 three classes that are similiar in their structure. To build a collaborative
 similarity model do the follwing:
 
-1. Call the methods 
-    - "load_ratings_from",
-    - "load_ratings2_from" and 
-    - "load_bitratings_from" 
-    in the appropriate order, to load all private rating values into the memory.
-2. Use the method "build model" once to compute all similarities.
-3. Call the methods
-    - "threshold_prediction" with threshold epsilon, or
-    - "nn-prediction" with a number k
-    to get a prediction.
-4. Call the destructor "delete" to clean up the memory. 
+    1. Call the methods 
+        - "load_ratings_from",
+        - "load_ratings2_from" and 
+        - "load_bitratings_from" 
+        
+       in the appropriate order, to load all private rating values into the memory.
+    2. Use the method "build model" once to compute all similarities.
+    3. Call the methods
+        - "threshold_prediction" with threshold epsilon, or
+        - "nn-prediction" with a number k
+        
+       to get a prediction.
+    4. Call the destructor "delete" to clean up the memory. 
+    
 """
 
 from Compiler.types import *
@@ -27,23 +30,27 @@ from config_mine import *
         
 class UBCosineCF():
     """
-    This class provides functionality for a user-based collaborative filter with
+    Provides functionality for a user-based collaborative filter with
     cosine similarity model.
     
-    R is a secure fixed-point Matrix. It stores the rating values r_ui. 
-    If r_ui is undefined the value is 0.
+    :param n: number of users :math:`n`
+    :param m: number of items :math:`m`
     
-    R2 is a secure fixed-point Matrix. It stores the squares of rating values r_ui^2.
-    If r_ui^2 is undefined the value is 0.
-    
-    B is a secure integer Matrix. Its values b_ui encode whether r_ui is 
-    defined or not. 
-    
-    S is a secure fixed-point Matrix. It stores the computed cosine similarity values.
     """
     def __init__(self, n, m):
         """
         Initialize a new instance with n users and m items.
+        
+        ``R`` is a secure fixed-point Matrix. It stores the rating values :math:`r_{ui}`. 
+        If :math:`r_{ui}` is undefined the value is 0.
+        
+        ``R2`` is a secure fixed-point Matrix. It stores the squares of rating values :math:`r_{ui}^2`.
+        If :math:`r_{ui}^2` is undefined the value is 0.
+        
+        ``B`` is a secure integer Matrix. Its values :math:`b_{ui}` encode whether :math:`r_{ui}` is 
+        defined or not. 
+        
+        ``S`` is a secure fixed-point Matrix. It stores the computed cosine similarity values :math:`s_{uv}^2`.
         """
         self.S = sfixMatrix(n,n) # Similarity model
         self.n = n # Number of users
@@ -54,7 +61,10 @@ class UBCosineCF():
             
     def load_ratings_from(self, user, player):
         """
-        Load the ratings r_ui for user from player and store them in R.
+        Load the ratings :math:`r_{ui}` for ``user`` from ``player`` and store them in ``R``.
+        
+        :param user: the user for which ratings are loaded
+        :param player: the player from which ratings are loaded
         """
         ratings = self.R[user]
         @for_range(self.m)
@@ -64,7 +74,10 @@ class UBCosineCF():
             
     def load_ratings2_from(self, user, player):
         """
-        Load the squared ratings r_ui^2 for user from player and store them in R2.
+        Load the ratings :math:`r_{ui}^2` for ``user`` from ``player`` and store them in ``R2``.
+        
+        :param user: the user for which ratings are loaded
+        :param player: the player from which ratings are loaded
         """
         ratings2 = self.R2[user]
         @for_range(self.m)
@@ -74,7 +87,10 @@ class UBCosineCF():
         
     def load_bitratings_from(self, user, player):
         """
-        Load the boolean values b_ui for user from player and store them in B.
+        Load the boolean values :math:`b_{ui}` for ``user`` from ``player`` and store them in ``B``.
+        
+        :param user: the user for which ratings are loaded
+        :param player: the player from which ratings are loaded
         """
         bitratings = self.B[user]
         @for_range(self.m)
@@ -83,8 +99,12 @@ class UBCosineCF():
             
     def print_ratings(self):
         """
-        Prints the first 10x10 elements of R, R2 and B. 
-        UNSECURE! Only use for for debugging purpose.
+        Prints the first 10 times 10 elements of ``R``, ``R2`` and ``B``. 
+        
+        .. warning::
+        
+            This method is not secure. Only use for for debugging purpose.
+            
         """
         print_ln("R")
         @for_range(min(self.n,10))
@@ -113,7 +133,11 @@ class UBCosineCF():
     def build_model(self):
         """
         Computes all similarity values for a cosine similarity model.
-        Remember to load all rating values in to the model first with the "load_*_from" methods.
+        
+        .. note::
+        
+            Load all rating values in to the model first with the ``load_*_from`` methods.
+            
         """
         print_ln("Building secure shared similarity model")
         @for_range(self.n)
@@ -129,8 +153,12 @@ class UBCosineCF():
     @method_block
     def cosine(self, u,v):
         """
-        Computes the cosine similarity between user u and v.
-        If the cosine similarity is undefined it returns sfix(0).
+        Computes the cosine similarity.
+        
+        :param u: one user :math:`u`
+        :param u: another user :math:`v`
+        
+        Returns the cosine similarity between u and v. If the cosine similarity is undefined it returns ``sfix(0)``.
         """
         d = MemValue(sint(0))
         su = MemValue(sint(0))
@@ -151,8 +179,12 @@ class UBCosineCF():
     
     def print_model(self):
         """
-        Prints the first 10x10 elements of S. 
-        UNSECURE! Only use for for debugging purpose.
+        Prints the first 10 times 10 elements of ``S``.
+        
+        .. warning::
+        
+            This method is not secure. Only use for for debugging purpose.
+            
         """
         print_ln("S")
         @for_range(min(self.n,10))
@@ -165,8 +197,13 @@ class UBCosineCF():
     @method_block
     def threshold_prediction(self, u, i, epsilon):
         """
-        Predict a rating from user u to item i based on all peers v that have
-        s_uv >= epsilon.
+        Predict a rating with a threshold approach.
+        
+        :param u: the target user :math:`u`
+        :param i: the target item :math:`i`
+        :param epsilon: the threshold :math:`\epsilon`
+        
+        Returns a prediction :math:`\hat{r}_{ui}`. Or ``sfix(0)`` if the prediction is undefined.
         """
         r = MemValue(sint(0))
         n = MemValue(sint(0))
@@ -188,7 +225,13 @@ class UBCosineCF():
     @method_block
     def nn_prediction(self, u, i, k, f):
         """
-        Predict a rating from user u to item i based on the k most similar peers.
+        Predict a rating with a k-nearest-neighbours approach.
+        
+        :param u: the target user :math:`u`
+        :param i: the target item :math:`i`
+        :param k: the parameter :math:`k`
+        
+        Returns a prediction :math:`\hat{r}_{ui}`. Or ``sfix(0)`` if the prediction is undefined.
         """
         epsilon = sfix.MemValue(sfix(sint(2**(sfix.f-1)))) # 0.5
         
@@ -209,6 +252,11 @@ class UBCosineCF():
     def delete(self):
         """
         Destructor
+        
+        .. note::
+        
+            SPDZ has no garbage collection. Call this method, when the collaborative filter is no more required.
+            
         """
         self.S.delete()
         self.R.delete()
@@ -217,17 +265,22 @@ class UBCosineCF():
 
 class SparseUBCosineCF():
     """
-    This class provides functionality for a user-based collaborative filter with
+    Provides functionality for a user-based collaborative filter with
     cosine similarity model.
     
-    R is a sparse fixed-point Matrix that stores the ratings and their squared values
-    in a compressed format. 
+    :param n: number of users :math:`n`
+    :param m: number of items :math:`m`
+    :param c: capacity of the sparse representation :math:`c`
     
-    S is a secure fixed-point Matrix. It stores the computed cosine similarity values.
     """
     def __init__(self, n, m, capacity):
         """
         Initialize a new instance with n users and m items and matrix capacity.
+        
+        ``R`` is a sparse fixed-point Matrix that stores the ratings and their squared values
+        in a compressed format. 
+    
+        ``S`` is a secure fixed-point Matrix. It stores the computed cosine similarity values :math:`s_{uv}^2`.
         """
         self.S = sfixMatrix(n,n) # Similarity model
         self.n = n # Number of users
@@ -237,14 +290,21 @@ class SparseUBCosineCF():
         
     def load_ratings_from(self, user, player):
         """
-        Load the sparse rating vector for user from player and store it in R.
+        Load the sparse rating vector for ``user`` from ``player`` and store it in ``R``.
+        
+        :param user: the user for which ratings are loaded
+        :param player: the player from which ratings are loaded
         """
         sfixSparseArray.get_raw_input_from(player, self.n, self.capacity, address=self.R[user].address)
     
     def print_ratings(self):
         """
-        Prints the first 10x10 elements of R. 
-        UNSECURE! Only use for for debugging purpose.
+        Prints the first 10 times 10 elements of ``R``, ``R2`` and ``B``. 
+        
+        .. warning::
+        
+            This method is not secure. Only use for for debugging purpose.
+            
         """
         print_ln("R")
         @for_range(min(self.n,10))
@@ -266,7 +326,11 @@ class SparseUBCosineCF():
     def build_model(self):
         """
         Computes all similarity values for a cosine similarity model.
-        Remember to load all rating values in to the model first with the "load_ratings_from" method.
+        
+        .. note::
+        
+            Load all rating values in to the model first with the ``load_ratings_from`` method.
+            
         """
         print_ln("Building secure shared similarity model")
         @for_range(self.n)
@@ -283,8 +347,12 @@ class SparseUBCosineCF():
     @method_block
     def cosine(self, u,v):
         """
-        Computes the cosine similarity between user u and v.
-        If the cosine similarity is undefined it returns sfix(0).
+        Computes the cosine similarity.
+        
+        :param u: one user :math:`u`
+        :param u: another user :math:`v`
+        
+        Returns the cosine similarity between u and v. If the cosine similarity is undefined it returns ``sfix(0)``.
         """
         d = MemValue(sint(0))
         su = MemValue(sint(0))
@@ -309,8 +377,12 @@ class SparseUBCosineCF():
     
     def print_model(self):
         """
-        Prints the first 10x10 elements of S. 
-        UNSECURE! Only use for for debugging purpose.
+        Prints the first 10 times 10 elements of ``S``.
+        
+        .. warning::
+        
+            This method is not secure. Only use for for debugging purpose.
+            
         """
         print_ln("S")
         @for_range(min(self.n,10))
@@ -323,30 +395,42 @@ class SparseUBCosineCF():
     def delete(self):
         """
         Destructor
+        
+        .. note::
+        
+            SPDZ has no garbage collection. Call this method, when the collaborative filter is no more required.
+            
         """
         self.S.delete()
         self.R.delete()
 
 class IBCosineCF(object):
     """
-    This class provides functionality for a item-based collaborative filter with
+    Provides functionality for a item-based collaborative filtering with
     cosine similarity model.
     
-    R is a secure fixed-point Matrix. It stores the rating values r_ui. 
-    If r_ui is undefined the value is 0.
+    :param n: number of users :math:`n`
+    :param m: number of items :math:`m`
     
-    R2 is a secure fixed-point Matrix. It stores the squares of rating values r_ui^2.
-    If r_ui^2 is undefined the value is 0.
-    
-    B is a secure integer Matrix. Its values b_ui encode whether r_ui is 
-    defined or not. 
-    
-    S is a clear fixed-point Matrix. It stores the computed cosine similarity values. 
-    
-    It is probalbly safe to reveal the similarity values because they contain no more 
+    It is maybe safe to reveal the similarity values because they contain no more 
     information about the users. 
     """
+
     def __init__(self, n, m):
+        """
+        Initialize a new instance with n users and m items.
+        
+        ``R`` is a secure fixed-point Matrix. It stores the rating values :math:`r_{ui}`. 
+        If :math:`r_{ui}` is undefined the value is 0.
+        
+        ``R2`` is a secure fixed-point Matrix. It stores the squares of rating values :math:`r_{ui}^2`.
+        If :math:`r_{ui}^2` is undefined the value is 0.
+        
+        ``B`` is a secure integer Matrix. Its values :math:`b_{ui}` encode whether :math:`r_{ui}` is 
+        defined or not. 
+        
+        ``S`` is a secure fixed-point Matrix. It stores the computed cosine similarity values :math:`s_{uv}^2`.
+        """
         self.S = cfixMatrix(m,m) # Similarity model
         self.R = sfixMatrix(n,m)
         self.R2 = sfixMatrix(n,m)
@@ -357,7 +441,10 @@ class IBCosineCF(object):
         
     def load_ratings_from(self, user, player):
         """
-        Load the ratings r_ui for user from player and store them in R.
+        Load the ratings :math:`r_{ui}` for ``user`` from ``player`` and store them in ``R``.
+        
+        :param user: the user for which ratings are loaded
+        :param player: the player from which ratings are loaded
         """
         ratings = self.R[user]
         @for_range(self.m)
@@ -367,7 +454,10 @@ class IBCosineCF(object):
             
     def load_ratings2_from(self, user, player):
         """
-        Load the squared ratings r_ui^2 for user from player and store them in R2.
+        Load the ratings :math:`r_{ui}^2` for ``user`` from ``player`` and store them in ``R2``.
+        
+        :param user: the user for which ratings are loaded
+        :param player: the player from which ratings are loaded
         """
         ratings2 = self.R2[user]
         @for_range(self.m)
@@ -377,7 +467,10 @@ class IBCosineCF(object):
         
     def load_bitratings_from(self, user, player):
         """
-        Load the boolean values b_ui for user from player and store them in B.
+        Load the boolean values :math:`b_{ui}` for ``user`` from ``player`` and store them in ``B``.
+        
+        :param user: the user for which ratings are loaded
+        :param player: the player from which ratings are loaded
         """
         bitratings = self.B[user]
         @for_range(self.m)
@@ -386,8 +479,12 @@ class IBCosineCF(object):
             
     def print_ratings(self):
         """
-        Prints the first 10x10 elements of R, R2 and B. 
-        UNSECURE! Only use for for debugging purpose.
+        Prints the first 10 times 10 elements of ``R``, ``R2`` and ``B``. 
+        
+        .. warning::
+        
+            This method is not secure. Only use for for debugging purpose.
+            
         """
         print_ln("R")
         @for_range(min(self.n,10))
@@ -416,9 +513,15 @@ class IBCosineCF(object):
     def build_model(self):
         """
         Computes all similarity values for a cosine similarity model.
-        Remember to load all rating values in to the model first with the "load_*_from" methods.
         
-        The similarity values are opened because it deanonymization is probably not possible.
+        .. note::
+        
+            Load all rating values in to the model first with the ``load_*_from`` methods.
+        
+        .. warning::
+        
+            The similarity values are opened and therefore deanonymization is probably possible.
+            
         """
         print_ln("Building secure shared similarity model")
         @for_range(self.m)
@@ -434,8 +537,12 @@ class IBCosineCF(object):
     @method_block
     def cosine(self, i,j):
         """
-        Computes the cosine similarity between items i and j.
-        If the cosine similarity is undefined it returns sfix(0).
+        Computes the cosine similarity.
+        
+        :param u: one user :math:`u`
+        :param u: another user :math:`v`
+        
+        Returns the cosine similarity between u and v. If the cosine similarity is undefined it returns ``sfix(0)``.
         """
         d = MemValue(sint(0))
         si = MemValue(sint(0))
@@ -456,7 +563,7 @@ class IBCosineCF(object):
             
     def print_model(self):
         """
-        Prints the first 10x10 elements of S. 
+        Prints the first 10 times 10 elements of ``S``.
         """
         print_ln("S")
         @for_range(min(self.m, 10))
@@ -472,11 +579,19 @@ class IBCosineCF(object):
     @method_block
     def threshold_prediction(self, u, i, epsilon):
         """
-        Predict a rating from user u to item i based on all peers j that have
-        s_ij >= epsilon.
+        Predict a rating with a threshold approach.
         
-        UNSECURE! This algorithm reveals rating values. Actually it should run locally, 
-        which however is not yet possible with SPDZ. 
+        :param u: the target user :math:`u`
+        :param i: the target item :math:`i`
+        :param epsilon: the threshold :math:`\epsilon`
+        
+        Returns a prediction :math:`\hat{r}_{ui}`. Or ``cfix(0)`` if the prediction is undefined.
+        
+        .. warning::
+        
+            This algorithm reveals rating values. Actually it should run locally, 
+            which however is not yet possible with SPDZ. 
+            
         """
         rating = cfix.MemValue(cfix(0))
         norm = cfix.MemValue(cfix(0))
@@ -500,10 +615,17 @@ class IBCosineCF(object):
     @method_block
     def nn_prediction(self, u, i, k, f):
         """
-        Predict a rating from user u to item i based on the k most similar peers.
+        Predict a rating with a k-nearest-neighbours approach.
         
-        UNSECURE! This algorithm reveals rating values. Actually it should run locally, 
-        which however is not yet possible with SPDZ. 
+        :param u: the target user :math:`u`
+        :param i: the target item :math:`i`
+        :param k: the parameter :math:`k`
+        
+        Returns a prediction :math:`\hat{r}_{ui}`. Or ``sfix(0)`` if the prediction is undefined.
+        
+        .. warning::
+             This algorithm reveals rating values. Actually it should run locally, 
+            which however is not yet possible with SPDZ. 
         """
         epsilon = cfix.MemValue(cfix(cint(2**(cfix.f-1)))) # 0.5
         
@@ -524,6 +646,11 @@ class IBCosineCF(object):
     def delete(self):
         """
         Destructor
+        
+        .. note::
+        
+            SPDZ has no garbage collection. Call this method, when the collaborative filter is no more required.
+            
         """
         self.S.delete()
         self.R.delete()

@@ -16,13 +16,13 @@ IO = InputFp(0)
 
 PREDICT = True
 NPREDICTIONS = 5000
-N_PARAMS = [100,200,300,400,500]
+N_PARAMS = [100,200,300] #,400,500]
 M = 3000
 K = 9
 F = 4
     
 for id,n in enumerate(N_PARAMS):
-    T = SPDZTest(id*10, IO).eval_data(n=n, m=M).mean_centered()
+    T = SPDZTest(id+1, IO).eval_data(n=n, m=M).mean_centered()
     T.buildUBplain()
     if PREDICT:
         T.testPredictions([(K, F)], NPREDICTIONS)

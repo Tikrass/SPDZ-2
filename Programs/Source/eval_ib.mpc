@@ -21,7 +21,7 @@ K = 11
 F = 14  
 
 for id,m in enumerate(M_PARAMS):
-    T = SPDZTest(id*10+100, IO).eval_data(n=N,m=m).mean_centered()
+    T = SPDZTest(id+1, IO).eval_data(n=N,m=m).mean_centered()
     T.buildIBplain()
     if PREDICT:
         T.testPredictions([(K, F)], NPREDICTIONS)

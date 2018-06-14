@@ -7,9 +7,11 @@ import subprocess
 
 class InputFp:
     """
-    Connector for gen_input_fp.x.
+    Connector for ``gen_input_fp.x``.
     
-    Generates the private input for the specified player.
+    Buffers and generates the private input for the specified ``player``.
+    
+    :param player: the player
     """
     def __init__(self,player):
         self.input_fp = []
@@ -17,16 +19,18 @@ class InputFp:
         
     def clear(self):
         """
-        Reset the input.
+        Reset the input buffer.
         """
         self.input_fp = []
     
         
     def gen_input_fp(self):
         """
-        Write the input from the buffer to the corresponding file. 
+        Write the input from the buffer to the corresponding private input file. 
         
-        Call it only once and at the end, because it overwrites previous files.
+        .. note::
+        
+            Call it exactly once and at the end, because it overwrites previous files.
         """
         args = ("./gen_input_fp.x", "-i", "-", "-o", "Player-Data/Private-Input-{}".format(self.player))
         proc = subprocess.Popen(args, stdin=subprocess.PIPE)
@@ -38,12 +42,16 @@ class InputFp:
     
     def append_fp(self, *values): 
         """
-        Append an integer in F_p to the buffer.
+        Append an integer to the buffer.
+        
+        :param values: one or more integers
         """
         self.input_fp += values
         
     def append_fp_array(self, values):
         """
-        Append an array of integers in F_p to the buffer.
+        Append an array of integers to the buffer.
+        
+        :param values: a list of values.
         """
         self.append_fp(*values)

@@ -22,7 +22,7 @@ T = SPDZTest(4,IO).eval_data(n=N, m=M).mean_centered()
 T.buildUBplain()
 
 for id,cap in enumerate(CAP_PARAMS):
-    T = SPDZTest(id*10, IO).eval_data(n=N, m=M).mean_centered()
+    T = SPDZTest(id+1, IO).eval_data(n=N, m=M).mean_centered()
     T.buildUBsparse(cap)
     T.CF.delete()
     

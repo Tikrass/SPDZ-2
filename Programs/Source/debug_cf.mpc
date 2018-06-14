@@ -9,10 +9,9 @@ cfix.set_precision(14, 28)
 
 IO = InputFp(0)
 
-K = 9
-F = 4
 N = 50
 M = 500
+C = 10
 NPREDICTIONS = 500
 
 #Small
@@ -39,6 +38,8 @@ T.debugPredictions(2,14)
 T.CF.delete()
 
 # Big
+K = 9
+F = 4
 T = SPDZTest(4,IO).eval_data(n=N, m=M).mean_centered() 
 T.buildUBplain()
 T.CF.print_ratings()
@@ -48,7 +49,7 @@ T.debugPredictions(K, F)
 T.CF.delete()
 
 T = SPDZTest(5,IO).eval_data(n=N, m=M).mean_centered() 
-T.buildUBsparse(10)
+T.buildUBsparse(C)
 T.CF.print_ratings()
 T.CF.print_model()
 T.CF.delete()

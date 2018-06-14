@@ -65,7 +65,7 @@ def estimate_ibf():
 
 def eval_ub():
     """
-    measure UB CF performance
+    Measure UB CF performance
     """
     PREDICT = True
     NPREDICTIONS = 5000
@@ -84,7 +84,7 @@ def eval_ub():
 
 def eval_ib():
     """
-    measure IB CF performance
+    Measure IB CF performance
     """
     PREDICT = True
     NPREDICTIONS = 5000
@@ -102,11 +102,6 @@ def debug():
     """
     Debugging Tests
     """        
-    K = 9
-    F = 4
-    N = 50
-    M = 500
-    NPREDICTIONS = 500
     
     T = BaselineTest(1).small_data().mean_centered() 
     T.buildUBbaseline()
@@ -122,6 +117,12 @@ def debug():
     T.testPredictions([(2, 14)], 16)
     T.debugPredictions(2,14)
      
+    N = 50
+    M = 500
+    NPREDICTIONS = 500
+    
+    K = 9
+    F = 4
     T = BaselineTest(3).eval_data(n=N, m=M).mean_centered() 
     T.buildUBbaseline()
     T.CF.print_ratings()

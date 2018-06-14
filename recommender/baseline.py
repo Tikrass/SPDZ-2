@@ -1,7 +1,26 @@
+# (C) 2018 Thibaud Kehler.
+# MIT Licence
+# see https://opensource.org/licenses/MIT
+
 from math import sqrt, isnan
 
 class BaselineUBCF(object):
+    """
+    User-based collaborative filter with cosine similarity model.     
+    
+    :param n: number of users :math:`n`
+    :type n: int
+    :param m: number of items :math:`m`
+    :type m: int
+    :param ratings: :math:`n` times :math:`m` matrix with the rating values :math:`r_{ui}`
+    :type ratings: list of lists
+    :param bitratings: :math:`n` times :math:`m`  matrix of boolean values :math:`b_{ui}`.
+    :type bitratings: list of lists
+    """
     def __init__(self, n, m, ratings, bitratings):
+        """
+        Constructor
+        """
         self.S = [[0 for _ in range(n)] for _ in range(n)] # Similarity model
         self.n = n # Number of users
         self.m = m # Number of items
@@ -9,6 +28,11 @@ class BaselineUBCF(object):
         self.B = bitratings # Boolean ratings
     
     def build_model(self):
+        """
+        Builds the user-similarity model.
+        
+        Call this method before any prediction method.
+        """
         for u in range(self.n):
             for v in range(u,self.n):
                 s_uv = self.cosine(u,v)
@@ -17,6 +41,9 @@ class BaselineUBCF(object):
                 print "{:5d} to {:5d}\r".format(u,v),
             
     def print_model(self):
+        """
+        Prints the first 10 times 10 similarity values :math:`s_{uv}` to console.
+        """
         print "S"
         for u in range(min(self.n,10)):
             for v in range(min(self.n,10)):
@@ -25,6 +52,9 @@ class BaselineUBCF(object):
         
                 
     def print_ratings(self):
+        """
+        Prints the first 10 times 10 rating values :math:`r_{ui}`, :math:`r^2_{ui}` and :math:`b_{ui}` to console.
+        """
         print "R"
         for u in range(min(self.n,10)):
             for i in range(min(self.m,10)):
@@ -44,6 +74,12 @@ class BaselineUBCF(object):
             print ""
                 
     def cosine(self, u,v):
+        """        
+        :param u: one user :math:`u`
+        :param v: another user :math:`v`
+        
+        Returns the cosine similarity  :math:`s_{uv}`.
+        """
         d = 0
         su = 0
         sv = 0
@@ -57,6 +93,17 @@ class BaselineUBCF(object):
             return  d / (sqrt(su) * sqrt(sv))
         
     def nn_prediction_sort(self,u,i,k):
+        """
+        Predicts the rating :math:`\hat{r}_{ui}` with k-nearest neighbour approach. 
+        
+        Algorithm uses sorting to obtain k-NN.
+        
+        :param u: target user :math:`u`
+        :param i: target item :math:`i`
+        :param k: parameter for :math:`k`-nearest neighbour algorithm
+
+        Returns the prediction :math:`\hat{r}_{ui}`.
+        """
         # Find K best peers
         
         # Remove all users who have not rated the target item
@@ -97,6 +144,18 @@ class BaselineUBCF(object):
         return rating / norm
     
     def nn_prediction_bs(self,u,i,k,f):
+        """
+        Predicts the rating :math:`\hat{r}_{ui}` with k-nearest neighbour approach. 
+        
+        Algorithm uses binary search of precision :math:`f\,'` to obtain k-NN.
+        
+        :param u: target user :math:`u`
+        :param i: target item :math:`i`
+        :param k: parameter for :math:`k`-nearest neighbour algorithm
+        :param f: precision of the binary search :math:`f\,'`
+
+        Returns the prediction :math:`\hat{r}_{ui}`.  
+        """
         epsilon = 2**(-1)
        
         for e in range(2, f):
@@ -123,13 +182,25 @@ class BaselineUBCF(object):
             return r / n
         
         
-            
+    # Use approx knn per default 
     nn_prediction=nn_prediction_bs            
         
             
 
 
 class BaselineIBCF(object):
+    """
+    Item-based collaborative filter with cosine similarity model.     
+    
+    :param n: number of users :math:`n`
+    :type n: int
+    :param m: number of items :math:`m`
+    :type m: int
+    :param ratings: :math:`n` times :math:`m` matrix with the rating values :math:`r_{ui}`
+    :type ratings: list of lists
+    :param bitratings: :math:`n` times :math:`m`  matrix of boolean values :math:`b_{ui}`.
+    :type bitratings: list of lists
+    """
     def __init__(self, n, m, ratings, bitratings):
         self.S = [[0 for _ in range(m)] for _ in range(m)] # Similarity model
         self.n = n # Number of users
@@ -138,6 +209,11 @@ class BaselineIBCF(object):
         self.B = bitratings # Boolean ratings
     
     def build_model(self):
+        """
+        Builds the user-similarity model.
+        
+        Call this method before any prediction method.
+        """
         for i in range(self.m):
             for j in range(i,self.m):
                 s_ij = self.cosine(i,j)
@@ -146,6 +222,9 @@ class BaselineIBCF(object):
                 print "{:5d} to {:5d}\r".format(i,j),
             
     def print_model(self):
+        """
+        Prints the first 10 times 10 similarity values :math:`s_{uv}` to console.
+        """
         print "S"
         for i in range(min(self.m,10)):
             for j in range(min(self.m,10)):
@@ -153,6 +232,9 @@ class BaselineIBCF(object):
             print ""
                 
     def print_ratings(self):
+        """
+        Prints the first 10 times 10 rating values :math:`r_{ui}`, :math:`r^2_{ui}` and :math:`b_{ui}` to console.
+        """
         print "R"
         for u in range(min(self.n,10)):
             for i in range(min(self.m,10)):
@@ -172,6 +254,12 @@ class BaselineIBCF(object):
             print ""
                 
     def cosine(self, i,j):
+        """        
+        :param u: one user :math:`u`
+        :param v: another user :math:`v`
+        
+        Returns the cosine similarity  :math:`s_{uv}`.
+        """
         d = 0
         si = 0
         sj = 0
@@ -185,6 +273,17 @@ class BaselineIBCF(object):
             return  d / (sqrt(si) * sqrt(sj))
     
     def nn_prediction_sort(self,u,i,k):
+        """
+        Predicts the rating :math:`\hat{r}_{ui}` with k-nearest neighbour approach. 
+        
+        Algorithm uses sorting to obtain k-NN.
+        
+        :param u: target user :math:`u`
+        :param i: target item :math:`i`
+        :param k: parameter for :math:`k`-nearest neighbour algorithm
+
+        Returns the prediction :math:`\hat{r}_{ui}`.
+        """
         # Find K best peers
         
         # Remove all users who have not rated the target item
@@ -225,6 +324,18 @@ class BaselineIBCF(object):
         return rating / norm
     
     def nn_prediction_bs(self,u,i,k,f):
+        """
+        Predicts the rating :math:`\hat{r}_{ui}` with k-nearest neighbour approach. 
+        
+        Algorithm uses binary search of precision :math:`f\,'` to obtain k-NN.
+        
+        :param u: target user :math:`u`
+        :param i: target item :math:`i`
+        :param k: parameter for :math:`k`-nearest neighbour algorithm
+        :param f: precision of the binary search :math:`f\,'`
+
+        Returns the prediction :math:`\hat{r}_{ui}`.  
+        """
         epsilon = 2**(-1)
        
         for e in range(2, f):
@@ -251,7 +362,7 @@ class BaselineIBCF(object):
             return r / n
         
         
-            
+    # Use approx knn per default 
     nn_prediction=nn_prediction_bs  
     
     

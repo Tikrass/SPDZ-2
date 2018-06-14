@@ -8,6 +8,12 @@ from scipy.sparse import lil_matrix
 class Dataset:
     """
     Connector for MovieLens datasets. 
+    
+    :param folder: a string containing the path to the movie lens files.
+    :param separator: collumn separator (default: ``,``)
+    :param quotechar: deliminator for longer strings. (default: ``"``)
+    :param ratings_file_name: filename of the ratings file (default: ``ratings.csv``)
+    :param movies_file_name: filename of the movie file (default: ``movies.csv``)
     """
     def __init__(self, folder, separator=',', quotechar='"', ratings_file_name="ratings.csv", movies_file_name="movies.csv"):
         self.ratings_file_name=ratings_file_name
@@ -49,8 +55,9 @@ class Dataset:
     
     def __list_ratings(self):
         """
-        Produces a list of all ratings.
-        [(u1,i1,r1), (u2,i2,r2), ...]
+        Produces a list of all ratings::
+        
+            [(u1,i1,r1), (u2,i2,r2), ...]
         """
         ratings = []
         with open(self.ratings_file_path, 'r') as ratings_file:
@@ -69,7 +76,7 @@ class Dataset:
     
     def __count_userids(self):
         """
-        Counts the number of users n.
+        Counts the number of users ``n``.
         """
         highest_id=0;
         for (u,i,r) in self.rating_list:
@@ -82,11 +89,18 @@ class Dataset:
     
     def get(self, n=None, m=None):
         """
+        Get the specified rating matrix out of the file. 
+        
+        :param n: a number of users (default: ``None`` - load maximum possible)
+        :param m: a number of items (default: ``None`` - load maximum possible)
+        
         Returns 
-        1. a rating matrix R, where all undefined ratings are 0.
-        2. a matrix of boolean values 1,0 which indicate whether a rating exists.
-        3. the ratings in list representation.
-        4. the dimension of the rating matrix n x m.
+        
+            1. a rating matrix ``R``, where all undefined ratings are 0.
+            2. a matrix of boolean values (1,0) ``B`` which indicate whether a rating exists.
+            3. the ratings in list representation.
+            4. the dimension of the rating matrix ``n`` and ``m``, which can be smaller than specified in the arguments.
+            
         """
         if n == None or n >= self.n_max:
             n = self.n_max
