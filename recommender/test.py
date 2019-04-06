@@ -53,6 +53,8 @@ folder = "Prep-Data/ml-latest-small"
 class Test():
     """
     Abstract test class. Do not use instantiate this class. Instead use SPDZTest or BaselineTest.
+    
+    :param id: unique test id for timer. 
     """
     def __init__(self, id):
         self.id = id
@@ -182,7 +184,7 @@ class SPDZTest(Test):
         @for_range(self.n)
         def user_loop3(u):
             self.CF.load_bitratings_from(u, 0)
-        stop_timer(self.id+1)
+        stop_timer(self.id*10+1)
         
         
     def _prep_private_sparse_input(self, cap):
